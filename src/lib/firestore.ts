@@ -5,7 +5,6 @@ import {
   getDoc, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   query, 
   where, 
   orderBy,
@@ -23,7 +22,7 @@ const isFirebaseConfigured = () => {
 
 export class FirestoreService {
   static async getOrganizations(): Promise<Organization[]> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getOrganizations();
     }
     
@@ -42,7 +41,7 @@ export class FirestoreService {
   }
 
   static async getOrganizationById(id: string): Promise<Organization | null> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getOrganizationById(id);
     }
     
@@ -61,7 +60,7 @@ export class FirestoreService {
   }
 
   static async getOrganizationsByRole(role: Role): Promise<Organization[]> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getOrganizationsByRole(role);
     }
     
@@ -84,7 +83,7 @@ export class FirestoreService {
   }
 
   static async getTasks(): Promise<Task[]> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getTasks();
     }
     
@@ -103,7 +102,7 @@ export class FirestoreService {
   }
 
   static async getTasksByCategory(category: TaskCategory): Promise<Task[]> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getTasksByCategory(category);
     }
     
@@ -128,7 +127,7 @@ export class FirestoreService {
   }
 
   static async getTasksByOrganization(orgId: string): Promise<Task[]> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getTasksByOrganization(orgId);
     }
     
@@ -153,7 +152,7 @@ export class FirestoreService {
   }
 
   static async createTask(task: Omit<Task, 'id'>): Promise<string> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.createTask(task);
     }
     
@@ -167,6 +166,7 @@ export class FirestoreService {
   }
 
   static async updateTask(id: string, updates: Partial<Task>): Promise<void> {
+    if (!db) throw new Error('Database not initialized');
     const docRef = doc(db, 'tasks', id);
     await updateDoc(docRef, { 
       ...updates, 
@@ -175,6 +175,7 @@ export class FirestoreService {
   }
 
   static async deleteTask(id: string): Promise<void> {
+    if (!db) throw new Error('Database not initialized');
     const batch = writeBatch(db);
     
     // Delete task
@@ -193,7 +194,7 @@ export class FirestoreService {
   }
 
   static async getProgress(): Promise<Progress[]> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getProgress();
     }
     
@@ -212,7 +213,7 @@ export class FirestoreService {
   }
 
   static async getProgressByOrganization(orgId: string): Promise<Progress[]> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getProgressByOrganization(orgId);
     }
     
@@ -235,6 +236,7 @@ export class FirestoreService {
   }
 
   static async getProgressByTask(taskId: string): Promise<Progress[]> {
+    if (!db) return [];
     const querySnapshot = await getDocs(
       query(
         collection(db, 'progress'), 
@@ -249,6 +251,7 @@ export class FirestoreService {
   }
 
   static async getProgressByTaskAndOrg(taskId: string, orgId: string): Promise<Progress | null> {
+    if (!db) return null;
     const querySnapshot = await getDocs(
       query(
         collection(db, 'progress'), 
@@ -270,7 +273,7 @@ export class FirestoreService {
     status: TaskStatus, 
     memo?: string
   ): Promise<void> {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.createOrUpdateProgress(taskId, orgId, status, memo);
     }
     

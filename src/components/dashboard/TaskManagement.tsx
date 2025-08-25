@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FirestoreService } from '@/lib/firestore';
 import { Task, Progress, TaskStatus, TaskCategory } from '@/types';
@@ -16,7 +16,7 @@ export default function TaskManagement() {
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('table');
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user?.orgId) return;
 
     setIsLoading(true);
@@ -36,11 +36,11 @@ export default function TaskManagement() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadData();
-  }, [user]);
+  }, [loadData]);
 
   const handleProgressUpdate = async (taskId: string, status: TaskStatus, memo?: string) => {
     if (!user?.orgId) return;
@@ -81,7 +81,6 @@ export default function TaskManagement() {
 
   // レスポンシブ対応: スマホではテーブル、PC・タブレットではカンバン
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const defaultViewMode = isMobile ? 'table' : 'kanban';
 
   useEffect(() => {
     const handleResize = () => {

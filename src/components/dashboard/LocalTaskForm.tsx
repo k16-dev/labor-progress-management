@@ -13,7 +13,6 @@ interface LocalTaskFormProps {
 export default function LocalTaskForm({ onSubmit, onCancel }: LocalTaskFormProps) {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
-  const [memo, setMemo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,7 +41,7 @@ export default function LocalTaskForm({ onSubmit, onCancel }: LocalTaskFormProps
         kind: 'local',
         createdByOrgId: user.orgId,
         active: true,
-        memo: memo.trim(),
+        memo: '',
         createdAt: now,
         updatedAt: now
       });

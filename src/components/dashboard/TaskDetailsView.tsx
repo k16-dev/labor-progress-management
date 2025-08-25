@@ -339,7 +339,7 @@ export default function TaskDetailsView({
             <>
               <div className="bg-white shadow overflow-hidden sm:rounded-md">
                 <ul className="divide-y divide-gray-200">
-                  {paginatedDetails.map((detail, index) => (
+                  {paginatedDetails.map((detail) => (
                     <li key={`${detail.taskId}-${detail.orgId}`} className="px-6 py-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">

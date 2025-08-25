@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FirestoreService } from '@/lib/firestore';
 import { Organization, Task, Progress, ProgressSummary, TaskCategory } from '@/types';
-import ProgressChart from './ProgressChart';
 import TaskManagementPanel from './TaskManagementPanel';
 import TaskDetailsView from './TaskDetailsView';
 
@@ -18,7 +17,7 @@ export default function CentralDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory>('block');
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [orgsData, tasksData, progressData] = await Promise.all([
@@ -75,11 +74,11 @@ export default function CentralDashboard() {
     });
 
     setProgressSummaries(summaries);
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const filteredSummaries = progressSummaries.filter(summary => {
     const org = organizations.find(o => o.id === summary.orgId);
