@@ -1,36 +1,176 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 労組進捗管理システム
 
-## Getting Started
+労働組合の中央・ブロック・支部・分会の階層構造における進捗管理システムです。
 
-First, run the development server:
+## 機能概要
+
+### 対応ロール
+- **中央**: 全組織の進捗閲覧、共通タスク管理、棒グラフ表示
+- **ブロック/支部/分会**: 自組織の進捗管理、ローカルタスク作成、メモ機能
+
+### 主要機能
+- ロール別認証（固定パスワード）
+- タスク管理（共通/ローカル）
+- 進捗管理（未着手/進行中/完了）
+- メモ機能（履歴保持）
+- 集計・レポート（棒グラフ）
+- レスポンシブデザイン（PC/タブレット/スマホ対応）
+
+## 技術構成
+
+- **フロントエンド**: Next.js 15 + React 19 + TypeScript
+- **UI**: Tailwind CSS + Chart.js
+- **バックエンド**: Firebase Firestore
+- **認証**: ローカルストレージベースの認証
+- **デプロイ**: Vercel対応
+
+## セットアップ
+
+### 1. 依存関係のインストール
+
+```bash
+npm install
+```
+
+### 2. Firebase設定
+
+1. Firebase Console で新しいプロジェクトを作成
+2. Firestore Database を有効化
+3. プロジェクトの設定 > 全般 > Firebase SDK snippet から設定情報を取得
+4. `.env.local` ファイルを編集して Firebase 設定を追加:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+```
+
+### 3. Firestore セキュリティルール
+
+Firebase Console > Firestore Database > ルール で以下を設定:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 全ユーザーが読み取り可能（認証は簡易実装のため）
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+### 4. データ初期化
+
+Firebase Admin SDK をセットアップして初期データを投入:
+
+```bash
+# Firebase CLI インストール
+npm install -g firebase-tools
+
+# Firebase ログイン
+firebase login
+
+# プロジェクト初期化
+firebase init
+
+# シードデータ投入
+npm run seed
+```
+
+## 開発・実行
+
+### 開発サーバー起動
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで http://localhost:3000 にアクセス
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ビルド
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+### デプロイ（Vercel）
 
-To learn more about Next.js, take a look at the following resources:
+1. GitHub リポジトリにプッシュ
+2. Vercel に GitHub 連携でプロジェクト作成
+3. 環境変数に `.env.local` の内容を設定
+4. 自動デプロイ
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 使用方法
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### ログイン認証
 
-## Deploy on Vercel
+- **中央**: パスワード `1050`
+- **ブロック/支部/分会**: パスワード `1234` + 組織選択
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 中央ユーザー
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **進捗一覧**: 全組織の進捗状況を一覧表示
+2. **棒グラフ**: ブロック/支部/分会別の進捗率をグラフ表示
+3. **管理**: 共通タスク（全ブロック、全支部、全分会向け）の作成・削除
+
+### ブロック/支部/分会ユーザー
+
+1. **タスク管理**: 
+   - 共通タスク（閲覧のみ） + 自組織のローカルタスク
+   - ステータス更新（未着手/進行中/完了）
+   - メモ追加（履歴保持）
+2. **ローカルタスク作成**: 自組織専用のタスクを作成
+3. **表示モード**: 
+   - PC/タブレット: カンバン方式/テーブル方式 切替可能
+   - スマホ: テーブル方式（レスポンシブ対応）
+
+## データ構造
+
+### Organizations（組織）
+- 中央（1組織）+ ブロック（9組織）+ 分会（52組織）+ 支部（3組織）
+
+### Tasks（タスク）
+- **共通タスク**: 中央が作成、カテゴリ別に該当組織に適用
+- **ローカルタスク**: 各組織が自分用に作成
+
+### Progress（進捗）
+- タスクごと・組織ごとの進捗状況
+- ステータス + メモ + 履歴
+
+## 主な組織一覧
+
+### ブロック（9組織）
+北海道ブロック、東北ブロック、関東ブロック、北陸ブロック、東海ブロック、近畿ブロック、中国ブロック、四国ブロック、九州ブロック
+
+### 支部（3組織）
+幕張、所沢、吉備
+
+### 分会（52組織）
+47都道府県 + 旭川、多摩、豊橋、南大阪、北九州
+
+## アクセシビリティ対応
+
+- WCAG 2.1 AA 準拠
+- キーボード操作対応
+- スクリーンリーダー対応
+- 色彩コントラスト確保
+
+## 追加開発要件
+
+将来拡張として以下の機能が検討されています:
+
+- 個別ユーザーアカウント + MFA
+- メール/Slack 通知
+- 監査ログ機能
+- 権限の細分化
+- メモのスレッド化
+
+## ライセンス
+
+このプロジェクトは要件定義書に基づいて実装されています。
