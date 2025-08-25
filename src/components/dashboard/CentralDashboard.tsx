@@ -17,29 +17,7 @@ export default function CentralDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory>('block');
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [orgsData, tasksData, progressData] = await Promise.all([
-        FirestoreService.getOrganizations(),
-        FirestoreService.getTasks(),
-        FirestoreService.getProgress()
-      ]);
-      
-      setOrganizations(orgsData);
-      setTasks(tasksData);
-      setProgress(progressData);
-      
-      // 進捗集計を計算
-      calculateProgressSummaries(orgsData, tasksData, progressData);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateProgressSummaries = (orgs: Organization[], tasks: Task[], progress: Progress[]) => {
+  const calculateProgressSummaries = useCallback((orgs: Organization[], tasks: Task[], progress: Progress[]) => {
     const summaries: ProgressSummary[] = [];
 
     orgs.forEach(org => {
@@ -75,6 +53,28 @@ export default function CentralDashboard() {
 
     setProgressSummaries(summaries);
   }, []);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [orgsData, tasksData, progressData] = await Promise.all([
+        FirestoreService.getOrganizations(),
+        FirestoreService.getTasks(),
+        FirestoreService.getProgress()
+      ]);
+      
+      setOrganizations(orgsData);
+      setTasks(tasksData);
+      setProgress(progressData);
+      
+      // 進捗集計を計算
+      calculateProgressSummaries(orgsData, tasksData, progressData);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [calculateProgressSummaries]);
 
   useEffect(() => {
     loadData();
