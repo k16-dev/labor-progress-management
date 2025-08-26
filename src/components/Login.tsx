@@ -90,8 +90,8 @@ export default function Login({ onLogin }: LoginProps) {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
+      <div className="max-w-lg w-full space-y-8 bg-white rounded-xl shadow-xl p-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             統合進捗管理システム
