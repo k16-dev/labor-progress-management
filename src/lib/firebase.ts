@@ -1,13 +1,12 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
-// Firebase設定が有効かチェック (一時的に無効化でMockDataモードでテスト)
+// Firebase設定が有効かチェック
 const isValidConfig = () => {
-  return false; // 一時的にFirebaseを無効にしてMockDataでテスト
-  // return process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-  //        process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'your-api-key' &&
-  //        process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-  //        process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'your-project-id';
+  return process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
+         process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'your-api-key' &&
+         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'your-project-id';
 };
 
 let app: FirebaseApp | null = null;
