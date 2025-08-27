@@ -44,13 +44,15 @@ export class FirestoreService {
     }
     
     try {
-      const querySnapshot = await getDocs(
-        query(collection(db, 'organizations'), orderBy('displayOrder', 'asc'))
-      );
-      return querySnapshot.docs.map(doc => ({
+      // シンプルなクエリに変更（インデックス不要）
+      const querySnapshot = await getDocs(collection(db, 'organizations'));
+      const allOrgs = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Organization[];
+      
+      // JavaScript側でソート
+      return allOrgs.sort((a, b) => a.displayOrder - b.displayOrder);
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getOrganizations();
@@ -82,17 +84,17 @@ export class FirestoreService {
     }
     
     try {
-      const querySnapshot = await getDocs(
-        query(
-          collection(db, 'organizations'), 
-          where('role', '==', role),
-          orderBy('displayOrder', 'asc')
-        )
-      );
-      return querySnapshot.docs.map(doc => ({
+      // シンプルなクエリに変更（インデックス不要）
+      const querySnapshot = await getDocs(collection(db, 'organizations'));
+      const allOrgs = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Organization[];
+      
+      // JavaScript側でフィルタリングとソート
+      return allOrgs
+        .filter(o => o.role === role)
+        .sort((a, b) => a.displayOrder - b.displayOrder);
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getOrganizationsByRole(role);
@@ -105,13 +107,15 @@ export class FirestoreService {
     }
     
     try {
-      const querySnapshot = await getDocs(
-        query(collection(db, 'tasks'), orderBy('createdAt', 'asc'))
-      );
-      return querySnapshot.docs.map(doc => ({
+      // シンプルなクエリに変更（インデックス不要）
+      const querySnapshot = await getDocs(collection(db, 'tasks'));
+      const allTasks = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Task[];
+      
+      // JavaScript側でソート
+      return allTasks.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getTasks();
@@ -124,19 +128,17 @@ export class FirestoreService {
     }
     
     try {
-      const querySnapshot = await getDocs(
-        query(
-          collection(db, 'tasks'), 
-          where('category', '==', category),
-          where('active', '==', true),
-          where('kind', '==', 'common'),
-          orderBy('createdAt', 'asc')
-        )
-      );
-      return querySnapshot.docs.map(doc => ({
+      // シンプルなクエリに変更（インデックス不要）
+      const querySnapshot = await getDocs(collection(db, 'tasks'));
+      const allTasks = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Task[];
+      
+      // JavaScript側でフィルタリング
+      return allTasks.filter(t => 
+        t.category === category && t.active && t.kind === 'common'
+      ).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getTasksByCategory(category);
@@ -149,19 +151,17 @@ export class FirestoreService {
     }
     
     try {
-      const querySnapshot = await getDocs(
-        query(
-          collection(db, 'tasks'), 
-          where('createdByOrgId', '==', orgId),
-          where('active', '==', true),
-          where('kind', '==', 'local'),
-          orderBy('createdAt', 'asc')
-        )
-      );
-      return querySnapshot.docs.map(doc => ({
+      // シンプルなクエリに変更（インデックス不要）
+      const querySnapshot = await getDocs(collection(db, 'tasks'));
+      const allTasks = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Task[];
+      
+      // JavaScript側でフィルタリング
+      return allTasks.filter(t => 
+        t.createdByOrgId === orgId && t.active && t.kind === 'local'
+      ).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getTasksByOrganization(orgId);
@@ -216,13 +216,15 @@ export class FirestoreService {
     }
     
     try {
-      const querySnapshot = await getDocs(
-        query(collection(db, 'progress'), orderBy('updatedAt', 'desc'))
-      );
-      return querySnapshot.docs.map(doc => ({
+      // シンプルなクエリに変更（インデックス不要）
+      const querySnapshot = await getDocs(collection(db, 'progress'));
+      const allProgress = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Progress[];
+      
+      // JavaScript側でソート
+      return allProgress.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getProgress();
@@ -235,17 +237,17 @@ export class FirestoreService {
     }
     
     try {
-      const querySnapshot = await getDocs(
-        query(
-          collection(db, 'progress'), 
-          where('orgId', '==', orgId),
-          orderBy('updatedAt', 'desc')
-        )
-      );
-      return querySnapshot.docs.map(doc => ({
+      // シンプルなクエリに変更（インデックス不要）
+      const querySnapshot = await getDocs(collection(db, 'progress'));
+      const allProgress = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Progress[];
+      
+      // JavaScript側でフィルタリングとソート
+      return allProgress
+        .filter(p => p.orgId === orgId)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getProgressByOrganization(orgId);
