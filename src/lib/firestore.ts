@@ -8,7 +8,8 @@ import {
   query, 
   where, 
   orderBy,
-  writeBatch
+  writeBatch,
+  deleteField
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { MockFirestoreService } from './mock-data';
@@ -289,6 +290,8 @@ export class FirestoreService {
       const now = new Date().toISOString();
       const today = now.split('T')[0];
       
+      console.log('Firestore - existing progress:', existing);
+      
       if (existing) {
         const updates: Partial<Progress> = {
           status,
@@ -309,12 +312,21 @@ export class FirestoreService {
         
         if (status === '完了' && !existing.completedAt) {
           updates.completedAt = today;
-        } else if (status !== '完了') {
-          updates.completedAt = undefined;
+        } else if (status !== '完了' && existing.completedAt) {
+          // Firestoreでフィールドを削除するための特別処理
+          const updateData = { ...updates };
+          Object.assign(updateData, { completedAt: deleteField() });
+          console.log('Firestore - updating existing progress with:', updateData);
+          const docRef = doc(db, 'progress', existing.id);
+          await updateDoc(docRef, updateData);
+          console.log('Firestore - progress update completed successfully');
+          return;
         }
         
+        console.log('Firestore - updating existing progress with:', updates);
         const docRef = doc(db, 'progress', existing.id);
         await updateDoc(docRef, updates);
+        console.log('Firestore - progress update completed successfully');
       } else {
         const newProgress: Omit<Progress, 'id'> = {
           taskId,
@@ -330,7 +342,9 @@ export class FirestoreService {
           updatedAt: today
         };
         
+        console.log('Firestore - creating new progress:', newProgress);
         await addDoc(collection(db, 'progress'), newProgress);
+        console.log('Firestore - new progress created successfully');
       }
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);

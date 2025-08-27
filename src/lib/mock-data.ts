@@ -326,7 +326,8 @@ export class MockFirestoreService {
           
           if (status === '完了' && !existing.completedAt) {
             updates.completedAt = today;
-          } else if (status !== '完了') {
+          } else if (status !== '完了' && existing.completedAt) {
+            // MockDataでは単純にundefinedにする
             updates.completedAt = undefined;
           }
           
