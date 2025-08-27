@@ -24,21 +24,11 @@ export default function TaskCard({ task, progress, onProgressUpdate }: TaskCardP
   };
 
   const handleStatusUpdate = async (newStatus: TaskStatus) => {
-    console.log('TaskCard - handleStatusUpdate called:', {
-      taskId: task.id,
-      newStatus,
-      currentProgress: progress,
-      memoValue: memo
-    });
-    
     setIsUpdating(true);
     try {
       // ステータス更新時は、memoが変更されている場合のみ送信
       const shouldUpdateMemo = memo !== (progress?.memo || '');
       await onProgressUpdate(task.id, newStatus, shouldUpdateMemo ? memo : undefined);
-      console.log('TaskCard - Status update completed');
-    } catch (error) {
-      console.error('TaskCard - Status update failed:', error);
     } finally {
       setIsUpdating(false);
     }

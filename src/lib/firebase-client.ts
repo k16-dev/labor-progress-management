@@ -18,54 +18,29 @@ let db: Firestore | null = null;
 export const initializeFirebase = (): { app: FirebaseApp | null; db: Firestore | null } => {
   // ブラウザ環境でのみ実行
   if (typeof window === 'undefined') {
-    console.log('🚫 Firebase initialization skipped: Server-side environment');
     return { app: null, db: null };
   }
 
   // 既に初期化済みの場合は返す
   if (app && db) {
-    console.log('♻️ Firebase already initialized, returning existing instance');
     return { app, db };
   }
 
   try {
-    console.log('🔥 Starting Firebase initialization...', {
-      timestamp: new Date().toISOString(),
-      hostname: window.location.hostname,
-      protocol: window.location.protocol
-    });
-
     // Firebase App初期化
     if (getApps().length === 0) {
       app = initializeApp(firebaseConfig);
-      console.log('✅ Firebase App initialized successfully');
     } else {
       app = getApps()[0];
-      console.log('♻️ Using existing Firebase App');
     }
 
     // Firestore初期化
     db = getFirestore(app);
-    console.log('✅ Firestore initialized successfully');
-
-    // 初期化完了を記録
-    (window as unknown as Record<string, unknown>).__firebaseInitialized = true;
-    (window as unknown as Record<string, unknown>).__firebaseInitTime = Date.now();
 
     return { app, db };
 
   } catch (error) {
-    console.error('❌ Firebase initialization failed:', {
-      error: error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined,
-      config: firebaseConfig
-    });
-
-    // エラーを記録
-    (window as unknown as Record<string, unknown>).__firebaseInitError = error;
-    (window as unknown as Record<string, unknown>).__firebaseInitialized = false;
-
+    console.error('Firebase initialization failed:', error);
     return { app: null, db: null };
   }
 };

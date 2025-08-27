@@ -299,25 +299,11 @@ export class MockFirestoreService {
     status: TaskStatus, 
     memo?: string
   ): Promise<void> {
-    console.log('🧪 MockFirestoreService.createOrUpdateProgress called:', {
-      taskId,
-      orgId,
-      status,
-      memo,
-      timestamp: new Date().toISOString()
-    });
-    
     return new Promise((resolve) => {
       setTimeout(() => {
         const existingIndex = this.progress.findIndex(p => p.taskId === taskId && p.orgId === orgId);
         const now = new Date().toISOString();
         const today = now.split('T')[0];
-        
-        console.log('🧪 MockFirestoreService - Progress search result:', {
-          existingIndex,
-          existingProgress: existingIndex >= 0 ? this.progress[existingIndex] : null,
-          allProgress: this.progress.length
-        });
         
         if (existingIndex >= 0) {
           const existing = this.progress[existingIndex];
@@ -346,7 +332,6 @@ export class MockFirestoreService {
           }
           
           this.progress[existingIndex] = { ...existing, ...updates };
-          console.log('🧪 MockFirestoreService - Updated existing progress:', this.progress[existingIndex]);
         } else {
           const newProgress: Progress = {
             id: `progress_${Date.now()}`,
@@ -364,10 +349,8 @@ export class MockFirestoreService {
           };
           
           this.progress.push(newProgress);
-          console.log('🧪 MockFirestoreService - Created new progress:', newProgress);
         }
         
-        console.log('🧪 MockFirestoreService - Final progress state:', this.progress.filter(p => p.taskId === taskId && p.orgId === orgId));
         resolve();
       }, 100);
     });

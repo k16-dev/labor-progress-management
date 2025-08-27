@@ -4,7 +4,6 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import CentralDashboard from './dashboard/CentralDashboard';
 import TaskManagement from './dashboard/TaskManagement';
-import DebugPanel from './DebugPanel';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -38,9 +37,6 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
-
-      {/* Debug Panel */}
-      <DebugPanel />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
