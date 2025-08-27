@@ -7,9 +7,11 @@ interface TaskTableProps {
   tasks: Task[];
   progress: Progress[];
   onProgressUpdate: (taskId: string, status: TaskStatus, memo?: string) => void;
+  onTaskDelete?: (taskId: string, taskTitle: string) => void;
+  currentOrgId?: string;
 }
 
-export default function TaskTable({ tasks, progress, onProgressUpdate }: TaskTableProps) {
+export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDelete, currentOrgId }: TaskTableProps) {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [editingMemo, setEditingMemo] = useState<string | null>(null);
   const [memoValues, setMemoValues] = useState<{ [key: string]: string }>({});
@@ -120,12 +122,23 @@ export default function TaskTable({ tasks, progress, onProgressUpdate }: TaskTab
                     {taskProgress?.completedAt || '-'}
                   </td>
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleTaskExpansion(task.id)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => toggleTaskExpansion(task.id)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
+                      </button>
+                      {/* Show delete button only for local tasks or if user can delete common tasks */}
+                      {onTaskDelete && (task.kind === 'local' || (task.kind === 'common' && currentOrgId === 'org_000')) && (
+                        <button
+                          onClick={() => onTaskDelete(task.id, task.title)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          削除
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -173,12 +186,23 @@ export default function TaskTable({ tasks, progress, onProgressUpdate }: TaskTab
                 <p className="text-xs text-gray-500 mb-3">完了日: {taskProgress.completedAt}</p>
               )}
 
-              <button
-                onClick={() => toggleTaskExpansion(task.id)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
-              </button>
+              <div className="flex flex-col space-y-2">
+                <button
+                  onClick={() => toggleTaskExpansion(task.id)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium text-left"
+                >
+                  {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
+                </button>
+                {/* Show delete button only for local tasks or if user can delete common tasks */}
+                {onTaskDelete && (task.kind === 'local' || (task.kind === 'common' && currentOrgId === 'org_000')) && (
+                  <button
+                    onClick={() => onTaskDelete(task.id, task.title)}
+                    className="text-red-600 hover:text-red-800 text-sm font-medium text-left"
+                  >
+                    削除
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}

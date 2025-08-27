@@ -54,6 +54,20 @@ export default function TaskManagement() {
     }
   };
 
+  const handleTaskDelete = async (taskId: string, taskTitle: string) => {
+    if (!confirm(`「${taskTitle}」を削除しますか？関連する進捗データも削除されます。`)) {
+      return;
+    }
+
+    try {
+      await FirestoreService.deleteTask(taskId);
+      await loadData(); // データを再読み込み
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      alert('タスクの削除に失敗しました');
+    }
+  };
+
   const handleTaskCreated = () => {
     setShowNewTaskForm(false);
     loadData();
@@ -172,6 +186,8 @@ export default function TaskManagement() {
               tasks={tasks}
               progress={progress}
               onProgressUpdate={handleProgressUpdate}
+              onTaskDelete={handleTaskDelete}
+              currentOrgId={user?.orgId || ''}
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -190,6 +206,8 @@ export default function TaskManagement() {
                         task={task}
                         progress={getTaskProgress(task.id)}
                         onProgressUpdate={handleProgressUpdate}
+                        onTaskDelete={handleTaskDelete}
+                        currentOrgId={user?.orgId || ''}
                       />
                     ))}
                     {tasksByStatus[status].length === 0 && (

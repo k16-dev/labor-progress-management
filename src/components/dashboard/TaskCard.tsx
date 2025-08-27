@@ -7,9 +7,11 @@ interface TaskCardProps {
   task: Task;
   progress?: Progress;
   onProgressUpdate: (taskId: string, status: TaskStatus, memo?: string) => void;
+  onTaskDelete?: (taskId: string, taskTitle: string) => void;
+  currentOrgId?: string;
 }
 
-export default function TaskCard({ task, progress, onProgressUpdate }: TaskCardProps) {
+export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelete, currentOrgId }: TaskCardProps) {
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState(progress?.memo || '');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -87,6 +89,17 @@ export default function TaskCard({ task, progress, onProgressUpdate }: TaskCardP
 
       {/* Actions */}
       <div className="space-y-2">
+        {/* Delete Button */}
+        {onTaskDelete && (task.kind === 'local' || (task.kind === 'common' && currentOrgId === 'org_000')) && (
+          <div className="pb-2 border-b border-gray-100">
+            <button
+              onClick={() => onTaskDelete(task.id, task.title)}
+              className="text-xs text-red-600 hover:text-red-800 font-medium"
+            >
+              タスクを削除
+            </button>
+          </div>
+        )}
 
         {/* Communication Section */}
         <div>
