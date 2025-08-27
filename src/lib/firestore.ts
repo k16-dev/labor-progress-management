@@ -16,8 +16,7 @@ import { Organization, Task, Progress, TaskCategory, TaskStatus, Role } from '@/
 
 // Firebase接続チェック
 const isFirebaseConfigured = () => {
-  return process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-         process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'your-api-key';
+  return db !== null;
 };
 
 export class FirestoreService {

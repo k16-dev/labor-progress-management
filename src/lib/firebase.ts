@@ -1,27 +1,20 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
-// Firebase設定が有効かチェック
-const isValidConfig = () => {
-  return process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-         process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'your-api-key' &&
-         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'your-project-id';
+// Firebase設定（GitHub Pages用に直接設定）
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAq-N9zXGekpsfcSiJDCaNzakDv0C7DUSo",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "labor-progress-management.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "labor-progress-management",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "labor-progress-management.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "786259646367",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:786259646367:web:0dc8b27c7edc21fb508faa"
 };
 
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 
-if (isValidConfig()) {
-  const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-  };
-
+try {
   // 既に初期化されていない場合のみ初期化
   if (getApps().length === 0) {
     app = initializeApp(firebaseConfig);
@@ -30,8 +23,9 @@ if (isValidConfig()) {
   }
   
   db = getFirestore(app);
-} else {
-  console.warn('Firebase configuration not found or invalid. Using mock data for development.');
+  console.log('Firebase initialized successfully');
+} catch (error) {
+  console.error('Firebase initialization failed:', error);
 }
 
 export { db, app };
