@@ -433,9 +433,41 @@ export default function TaskDetailsView({
                           </svg>
                         </button>
                         
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const pageNum = Math.max(1, Math.min(currentPage - 2 + i, totalPages - 4 + i));
-                          return (
+                        {(() => {
+                          // ページネーション番号の計算
+                          const maxVisiblePages = 5;
+                          let startPage, endPage;
+
+                          if (totalPages <= maxVisiblePages) {
+                            // 総ページ数が表示可能数以下の場合、すべて表示
+                            startPage = 1;
+                            endPage = totalPages;
+                          } else {
+                            // 現在のページを中心に表示
+                            const halfVisible = Math.floor(maxVisiblePages / 2);
+                            
+                            if (currentPage <= halfVisible) {
+                              // 最初の方のページ
+                              startPage = 1;
+                              endPage = maxVisiblePages;
+                            } else if (currentPage + halfVisible >= totalPages) {
+                              // 最後の方のページ
+                              startPage = totalPages - maxVisiblePages + 1;
+                              endPage = totalPages;
+                            } else {
+                              // 中間のページ
+                              startPage = currentPage - halfVisible;
+                              endPage = currentPage + halfVisible;
+                            }
+                          }
+
+                          // ページ番号ボタンを生成
+                          const pageNumbers = [];
+                          for (let i = startPage; i <= endPage; i++) {
+                            pageNumbers.push(i);
+                          }
+
+                          return pageNumbers.map((pageNum) => (
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
@@ -447,8 +479,8 @@ export default function TaskDetailsView({
                             >
                               {pageNum}
                             </button>
-                          );
-                        })}
+                          ));
+                        })()}
                         
                         <button
                           onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
