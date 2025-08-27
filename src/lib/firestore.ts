@@ -11,17 +11,30 @@ import {
   writeBatch,
   deleteField
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, initializeFirebase } from './firebase-client';
 import { MockFirestoreService } from './mock-data';
 import { Organization, Task, Progress, TaskCategory, TaskStatus, Role } from '@/types';
 
-// Firebase接続チェック
+// Firebase接続チェック（動的初期化対応）
 const isFirebaseConfigured = () => {
-  console.log('Firebase configuration check:', {
-    dbExists: db !== null,
-    environment: typeof window !== 'undefined' ? 'browser' : 'server'
+  // ブラウザ環境でFirebase初期化を確認
+  if (typeof window !== 'undefined') {
+    const { db: currentDb } = initializeFirebase();
+    console.log('🔍 Firebase configuration check:', {
+      dbExists: currentDb !== null,
+      dbReference: db !== null,
+      environment: 'browser',
+      windowObject: !!window,
+      timestamp: new Date().toISOString()
+    });
+    return currentDb !== null;
+  }
+  
+  console.log('🔍 Firebase configuration check:', {
+    dbExists: false,
+    environment: 'server'
   });
-  return db !== null;
+  return false;
 };
 
 export class FirestoreService {
@@ -279,12 +292,15 @@ export class FirestoreService {
   ): Promise<void> {
     console.log('createOrUpdateProgress called:', { taskId, orgId, status, memo });
     
-    if (!isFirebaseConfigured() || !db) {
-      console.log('Using MockFirestoreService for progress update');
+    // 動的にFirebaseを取得
+    const { db: currentDb } = initializeFirebase();
+    
+    if (!isFirebaseConfigured() || !currentDb) {
+      console.log('🧪 Using MockFirestoreService for progress update');
       return MockFirestoreService.createOrUpdateProgress(taskId, orgId, status, memo);
     }
     
-    console.log('Using Firebase for progress update');
+    console.log('🔥 Using Firebase for progress update');
     try {
       const existing = await this.getProgressByTaskAndOrg(taskId, orgId);
       const now = new Date().toISOString();
@@ -317,14 +333,14 @@ export class FirestoreService {
           const updateData = { ...updates };
           Object.assign(updateData, { completedAt: deleteField() });
           console.log('Firestore - updating existing progress with:', updateData);
-          const docRef = doc(db, 'progress', existing.id);
+          const docRef = doc(currentDb, 'progress', existing.id);
           await updateDoc(docRef, updateData);
           console.log('Firestore - progress update completed successfully');
           return;
         }
         
         console.log('Firestore - updating existing progress with:', updates);
-        const docRef = doc(db, 'progress', existing.id);
+        const docRef = doc(currentDb, 'progress', existing.id);
         await updateDoc(docRef, updates);
         console.log('Firestore - progress update completed successfully');
       } else {
@@ -343,11 +359,24 @@ export class FirestoreService {
         };
         
         console.log('Firestore - creating new progress:', newProgress);
-        await addDoc(collection(db, 'progress'), newProgress);
+        await addDoc(collection(currentDb, 'progress'), newProgress);
         console.log('Firestore - new progress created successfully');
       }
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
+      console.error('🔥 CRITICAL: Firebase error in createOrUpdateProgress:', {
+        error: error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        taskId,
+        orgId,
+        status,
+        memo,
+        dbInitialized: db !== null,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Fallback to mock data with warning
+      console.warn('⚠️ FALLBACK: Using MockFirestoreService due to Firebase error');
       return MockFirestoreService.createOrUpdateProgress(taskId, orgId, status, memo);
     }
   }
