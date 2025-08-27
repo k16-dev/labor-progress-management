@@ -76,99 +76,11 @@ export const mockOrganizations: Organization[] = [
   { id: 'org_064', name: '吉備', role: 'branch', active: true, displayOrder: 64 }
 ];
 
-// モックタスクデータ
-export const mockTasks: Task[] = [
-  {
-    id: 'task_001',
-    title: '全ブロック共通タスク',
-    category: 'block',
-    kind: 'common',
-    createdByOrgId: 'org_000',
-    active: true,
-    memo: '',
-    createdAt: '2025-08-24',
-    updatedAt: '2025-08-24'
-  },
-  {
-    id: 'task_002',
-    title: '全支部共通タスク',
-    category: 'branch',
-    kind: 'common',
-    createdByOrgId: 'org_000',
-    active: true,
-    memo: '',
-    createdAt: '2025-08-24',
-    updatedAt: '2025-08-24'
-  },
-  {
-    id: 'task_003',
-    title: '全分会共通タスク',
-    category: 'sub',
-    kind: 'common',
-    createdByOrgId: 'org_000',
-    active: true,
-    memo: '',
-    createdAt: '2025-08-24',
-    updatedAt: '2025-08-24'
-  },
-  {
-    id: 'task_004',
-    title: '幕張支部ローカルタスク',
-    category: 'branch',
-    kind: 'local',
-    createdByOrgId: 'org_062',
-    active: true,
-    memo: '幕張支部独自のタスクです',
-    createdAt: '2025-08-24',
-    updatedAt: '2025-08-24'
-  },
-  {
-    id: 'task_005',
-    title: '北海道分会ローカルタスク',
-    category: 'sub',
-    kind: 'local',
-    createdByOrgId: 'org_010',
-    active: true,
-    memo: '北海道分会独自のタスクです',
-    createdAt: '2025-08-24',
-    updatedAt: '2025-08-24'
-  }
-];
+// モックタスクデータ（本番環境初期状態）
+export const mockTasks: Task[] = [];
 
-// モック進捗データ
-export const mockProgress: Progress[] = [
-  {
-    id: 'progress_001',
-    taskId: 'task_001',
-    orgId: 'org_001',
-    status: '進行中',
-    memo: '作業を開始しました',
-    memoHistory: [
-      {
-        memo: '作業を開始しました',
-        orgId: 'org_001',
-        timestamp: '2025-08-24T10:00:00.000Z'
-      }
-    ],
-    updatedAt: '2025-08-24'
-  },
-  {
-    id: 'progress_002',
-    taskId: 'task_003',
-    orgId: 'org_010',
-    status: '完了',
-    memo: 'タスクが完了しました',
-    memoHistory: [
-      {
-        memo: 'タスクが完了しました',
-        orgId: 'org_010',
-        timestamp: '2025-08-24T14:00:00.000Z'
-      }
-    ],
-    completedAt: '2025-08-24',
-    updatedAt: '2025-08-24'
-  }
-];
+// モック進捗データ（本番環境初期状態）
+export const mockProgress: Progress[] = [];
 
 export class MockFirestoreService {
   private static organizations = [...mockOrganizations];
