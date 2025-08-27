@@ -16,6 +16,10 @@ import { Organization, Task, Progress, TaskCategory, TaskStatus, Role } from '@/
 
 // Firebase接続チェック
 const isFirebaseConfigured = () => {
+  console.log('Firebase configuration check:', {
+    dbExists: db !== null,
+    environment: typeof window !== 'undefined' ? 'browser' : 'server'
+  });
   return db !== null;
 };
 
@@ -272,10 +276,14 @@ export class FirestoreService {
     status: TaskStatus, 
     memo?: string
   ): Promise<void> {
+    console.log('createOrUpdateProgress called:', { taskId, orgId, status, memo });
+    
     if (!isFirebaseConfigured() || !db) {
+      console.log('Using MockFirestoreService for progress update');
       return MockFirestoreService.createOrUpdateProgress(taskId, orgId, status, memo);
     }
     
+    console.log('Using Firebase for progress update');
     try {
       const existing = await this.getProgressByTaskAndOrg(taskId, orgId);
       const now = new Date().toISOString();

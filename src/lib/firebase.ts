@@ -14,18 +14,24 @@ const firebaseConfig = {
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 
-try {
-  // 既に初期化されていない場合のみ初期化
-  if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApps()[0];
+// クライアントサイドでのみFirebaseを初期化
+if (typeof window !== 'undefined') {
+  try {
+    // 既に初期化されていない場合のみ初期化
+    if (getApps().length === 0) {
+      app = initializeApp(firebaseConfig);
+      console.log('Firebase app initialized on client');
+    } else {
+      app = getApps()[0];
+      console.log('Using existing Firebase app on client');
+    }
+    
+    db = getFirestore(app);
+    console.log('Firestore database initialized successfully on client');
+  } catch (error) {
+    console.error('Firebase initialization failed on client:', error);
+    console.error('Config used:', firebaseConfig);
   }
-  
-  db = getFirestore(app);
-  console.log('Firebase initialized successfully');
-} catch (error) {
-  console.error('Firebase initialization failed:', error);
 }
 
 export { db, app };
