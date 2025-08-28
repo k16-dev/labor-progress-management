@@ -129,8 +129,11 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                       >
                         {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
                       </button>
-                      {/* Show delete button only for local tasks or if user can delete common tasks */}
-                      {onTaskDelete && (task.kind === 'local' || (task.kind === 'common' && currentOrgId === 'org_000')) && (
+                      {/* Show delete button: local tasks by creator, common tasks by central */}
+                      {onTaskDelete && (
+                        (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
+                        (task.kind === 'common' && currentOrgId === 'org_000')
+                      ) && (
                         <button
                           onClick={() => onTaskDelete(task.id, task.title)}
                           className="text-red-600 hover:text-red-800 text-sm font-medium"
@@ -193,8 +196,11 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                 >
                   {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
                 </button>
-                {/* Show delete button only for local tasks or if user can delete common tasks */}
-                {onTaskDelete && (task.kind === 'local' || (task.kind === 'common' && currentOrgId === 'org_000')) && (
+                {/* Show delete button: local tasks by creator, common tasks by central */}
+                {onTaskDelete && (
+                  (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
+                  (task.kind === 'common' && currentOrgId === 'org_000')
+                ) && (
                   <button
                     onClick={() => onTaskDelete(task.id, task.title)}
                     className="text-red-600 hover:text-red-800 text-sm font-medium text-left"

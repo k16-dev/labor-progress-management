@@ -90,7 +90,10 @@ export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelet
       {/* Actions */}
       <div className="space-y-2">
         {/* Delete Button */}
-        {onTaskDelete && (task.kind === 'local' || (task.kind === 'common' && currentOrgId === 'org_000')) && (
+        {onTaskDelete && (
+          (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
+          (task.kind === 'common' && currentOrgId === 'org_000')
+        ) && (
           <div className="pb-2 border-b border-gray-100">
             <button
               onClick={() => onTaskDelete(task.id, task.title)}
