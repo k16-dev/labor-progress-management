@@ -23,6 +23,7 @@ export interface Task {
   createdByOrgId: string;
   active: boolean;
   memo?: string;
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
 }

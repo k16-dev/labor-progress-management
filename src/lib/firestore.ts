@@ -104,7 +104,7 @@ export class FirestoreService {
       })) as Task[];
       
       // JavaScript側でソート
-      return allTasks.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      return allTasks.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getTasks();
@@ -124,10 +124,10 @@ export class FirestoreService {
         ...doc.data()
       })) as Task[];
       
-      // JavaScript側でフィルタリング
+      // JavaScript側でフィルタリング（表示順でソート）
       return allTasks.filter(t => 
         t.category === category && t.active && t.kind === 'common'
-      ).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getTasksByCategory(category);
@@ -147,10 +147,10 @@ export class FirestoreService {
         ...doc.data()
       })) as Task[];
       
-      // JavaScript側でフィルタリング
+      // JavaScript側でフィルタリング（ローカルタスクは表示順でソート）
       return allTasks.filter(t => 
         t.createdByOrgId === orgId && t.active && t.kind === 'local'
-      ).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
       console.warn('Firebase error, using mock data:', error);
       return MockFirestoreService.getTasksByOrganization(orgId);
@@ -346,6 +346,30 @@ export class FirestoreService {
       
       // Fallback to mock data
       return MockFirestoreService.createOrUpdateProgress(taskId, orgId, status, memo);
+    }
+  }
+
+  static async updateTaskOrder(taskOrderUpdates: { id: string; displayOrder: number }[]): Promise<void> {
+    if (!isFirebaseConfigured() || !db) {
+      return MockFirestoreService.updateTaskOrder(taskOrderUpdates);
+    }
+    
+    try {
+      const batch = writeBatch(db);
+      
+      // バッチ処理でタスクの表示順を更新
+      taskOrderUpdates.forEach(({ id, displayOrder }) => {
+        const taskRef = doc(db!, 'tasks', id);
+        batch.update(taskRef, { 
+          displayOrder,
+          updatedAt: new Date().toISOString().split('T')[0]
+        });
+      });
+      
+      await batch.commit();
+    } catch (error) {
+      console.warn('Firebase error, using mock data:', error);
+      return MockFirestoreService.updateTaskOrder(taskOrderUpdates);
     }
   }
 }

@@ -36,6 +36,7 @@ async function seedTasks() {
       createdByOrgId: 'org_000', // 中央
       active: true,
       memo: 'すべてのブロックで実施する共通タスクです',
+      displayOrder: 1,
       createdAt: now,
       updatedAt: now
     },
@@ -46,6 +47,7 @@ async function seedTasks() {
       createdByOrgId: 'org_000', // 中央
       active: true,
       memo: 'すべての支部で実施する共通タスクです',
+      displayOrder: 1,
       createdAt: now,
       updatedAt: now
     },
@@ -56,6 +58,7 @@ async function seedTasks() {
       createdByOrgId: 'org_000', // 中央
       active: true,
       memo: 'すべての分会で実施する共通タスクです',
+      displayOrder: 1,
       createdAt: now,
       updatedAt: now
     },
@@ -66,6 +69,7 @@ async function seedTasks() {
       createdByOrgId: 'org_062', // 幕張支部
       active: true,
       memo: '幕張支部独自のタスクです',
+      displayOrder: 1,
       createdAt: now,
       updatedAt: now
     },
@@ -76,6 +80,7 @@ async function seedTasks() {
       createdByOrgId: 'org_010', // 北海道分会
       active: true,
       memo: '北海道分会独自のタスクです',
+      displayOrder: 1,
       createdAt: now,
       updatedAt: now
     }

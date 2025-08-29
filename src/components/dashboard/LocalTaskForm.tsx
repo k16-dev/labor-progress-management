@@ -34,6 +34,8 @@ export default function LocalTaskForm({ onSubmit, onCancel }: LocalTaskFormProps
 
     try {
       const now = new Date().toISOString().split('T')[0];
+      // ローカルタスクは作成順（現在時刻ベース）で表示順を設定
+      const displayOrder = Date.now();
       
       await FirestoreService.createTask({
         title: title.trim(),
@@ -42,6 +44,7 @@ export default function LocalTaskForm({ onSubmit, onCancel }: LocalTaskFormProps
         createdByOrgId: user.orgId,
         active: true,
         memo: '',
+        displayOrder,
         createdAt: now,
         updatedAt: now
       });

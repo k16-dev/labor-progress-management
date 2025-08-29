@@ -122,7 +122,7 @@ export class MockFirestoreService {
       setTimeout(() => {
         const filteredTasks = this.tasks.filter(t => 
           t.category === category && t.active && t.kind === 'common'
-        );
+        ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
         resolve(filteredTasks);
       }, 100);
     });
@@ -133,7 +133,7 @@ export class MockFirestoreService {
       setTimeout(() => {
         const filteredTasks = this.tasks.filter(t => 
           t.createdByOrgId === orgId && t.active && t.kind === 'local'
-        );
+        ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
         resolve(filteredTasks);
       }, 100);
     });
@@ -263,6 +263,24 @@ export class MockFirestoreService {
           this.progress.push(newProgress);
         }
         
+        resolve();
+      }, 100);
+    });
+  }
+
+  static async updateTaskOrder(taskOrderUpdates: { id: string; displayOrder: number }[]): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        taskOrderUpdates.forEach(({ id, displayOrder }) => {
+          const taskIndex = this.tasks.findIndex(t => t.id === id);
+          if (taskIndex >= 0) {
+            this.tasks[taskIndex] = {
+              ...this.tasks[taskIndex],
+              displayOrder,
+              updatedAt: new Date().toISOString().split('T')[0]
+            };
+          }
+        });
         resolve();
       }, 100);
     });
