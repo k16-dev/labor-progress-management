@@ -8,13 +8,16 @@ interface TaskTableProps {
   progress: Progress[];
   onProgressUpdate: (taskId: string, status: TaskStatus, memo?: string) => void;
   onTaskDelete?: (taskId: string, taskTitle: string) => void;
+  onTaskUpdate?: (taskId: string, updates: { title: string; memo?: string }) => void;
   currentOrgId?: string;
 }
 
-export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDelete, currentOrgId }: TaskTableProps) {
+export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDelete, onTaskUpdate, currentOrgId }: TaskTableProps) {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [editingMemo, setEditingMemo] = useState<string | null>(null);
   const [memoValues, setMemoValues] = useState<{ [key: string]: string }>({});
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [editingTaskValues, setEditingTaskValues] = useState<{ [key: string]: { title: string; memo?: string } }>({});
 
   const getTaskProgress = (taskId: string): Progress | undefined => {
     return progress.find(p => p.taskId === taskId);
@@ -61,6 +64,46 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
     setExpandedTask(expandedTask === taskId ? null : taskId);
   };
 
+  const handleTaskEdit = (task: Task) => {
+    setEditingTaskValues({
+      ...editingTaskValues,
+      [task.id]: {
+        title: task.title,
+        memo: task.memo || ''
+      }
+    });
+    setEditingTask(task.id);
+  };
+
+  const handleTaskSave = async (taskId: string) => {
+    if (!onTaskUpdate) return;
+
+    try {
+      const updates = editingTaskValues[taskId];
+      if (updates) {
+        await onTaskUpdate(taskId, updates);
+      }
+      setEditingTask(null);
+    } catch (error) {
+      console.error('Failed to save task:', error);
+      alert('タスクの保存に失敗しました');
+    }
+  };
+
+  const handleTaskCancel = (taskId: string) => {
+    setEditingTask(null);
+    setEditingTaskValues({
+      ...editingTaskValues,
+      [taskId]: { title: '', memo: '' }
+    });
+  };
+
+  const canEditTask = (task: Task): boolean => {
+    // ローカルタスクは作成者のみ、共通タスクは中央のみ編集可能
+    return (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
+           (task.kind === 'common' && currentOrgId === 'org_000');
+  };
+
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
       {/* Desktop Table */}
@@ -94,9 +137,44 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                 <tr key={task.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{task.title}</div>
-                      {task.memo && (
-                        <div className="text-sm text-gray-500 mt-1">{task.memo}</div>
+                      {editingTask === task.id ? (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={editingTaskValues[task.id]?.title || ''}
+                            onChange={(e) => setEditingTaskValues({
+                              ...editingTaskValues,
+                              [task.id]: {
+                                ...editingTaskValues[task.id],
+                                title: e.target.value
+                              }
+                            })}
+                            className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="タスクタイトル"
+                            maxLength={100}
+                          />
+                          <textarea
+                            value={editingTaskValues[task.id]?.memo || ''}
+                            onChange={(e) => setEditingTaskValues({
+                              ...editingTaskValues,
+                              [task.id]: {
+                                ...editingTaskValues[task.id],
+                                memo: e.target.value
+                              }
+                            })}
+                            className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="メモ（任意）"
+                            rows={2}
+                            maxLength={200}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                          {task.memo && (
+                            <div className="text-sm text-gray-500 mt-1">{task.memo}</div>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>
@@ -122,24 +200,49 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                     {taskProgress?.completedAt || '-'}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => toggleTaskExpansion(task.id)}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
-                      </button>
-                      {/* Show delete button: local tasks by creator, common tasks by central */}
-                      {onTaskDelete && (
-                        (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
-                        (task.kind === 'common' && currentOrgId === 'org_000')
-                      ) && (
-                        <button
-                          onClick={() => onTaskDelete(task.id, task.title)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          削除
-                        </button>
+                    <div className="flex flex-col space-y-1">
+                      {editingTask === task.id ? (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleTaskSave(task.id)}
+                            className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          >
+                            保存
+                          </button>
+                          <button
+                            onClick={() => handleTaskCancel(task.id)}
+                            className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => toggleTaskExpansion(task.id)}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
+                          </button>
+                          {/* Show edit button: local tasks by creator, common tasks by central */}
+                          {onTaskUpdate && canEditTask(task) && (
+                            <button
+                              onClick={() => handleTaskEdit(task)}
+                              className="text-yellow-600 hover:text-yellow-800 text-sm font-medium"
+                            >
+                              編集
+                            </button>
+                          )}
+                          {/* Show delete button: local tasks by creator, common tasks by central */}
+                          {onTaskDelete && canEditTask(task) && (
+                            <button
+                              onClick={() => onTaskDelete(task.id, task.title)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            >
+                              削除
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>
@@ -160,9 +263,44 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
             <div key={task.id} className="border-b border-gray-200 p-4">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                  <h3 className="text-sm font-medium text-gray-900">{task.title}</h3>
-                  {task.memo && (
-                    <p className="text-sm text-gray-600 mt-1">{task.memo}</p>
+                  {editingTask === task.id ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={editingTaskValues[task.id]?.title || ''}
+                        onChange={(e) => setEditingTaskValues({
+                          ...editingTaskValues,
+                          [task.id]: {
+                            ...editingTaskValues[task.id],
+                            title: e.target.value
+                          }
+                        })}
+                        className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="タスクタイトル"
+                        maxLength={100}
+                      />
+                      <textarea
+                        value={editingTaskValues[task.id]?.memo || ''}
+                        onChange={(e) => setEditingTaskValues({
+                          ...editingTaskValues,
+                          [task.id]: {
+                            ...editingTaskValues[task.id],
+                            memo: e.target.value
+                          }
+                        })}
+                        className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="メモ（任意）"
+                        rows={2}
+                        maxLength={200}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-sm font-medium text-gray-900">{task.title}</h3>
+                      {task.memo && (
+                        <p className="text-sm text-gray-600 mt-1">{task.memo}</p>
+                      )}
+                    </>
                   )}
                 </div>
                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
@@ -190,23 +328,48 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
               )}
 
               <div className="flex flex-col space-y-2">
-                <button
-                  onClick={() => toggleTaskExpansion(task.id)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium text-left"
-                >
-                  {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
-                </button>
-                {/* Show delete button: local tasks by creator, common tasks by central */}
-                {onTaskDelete && (
-                  (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
-                  (task.kind === 'common' && currentOrgId === 'org_000')
-                ) && (
-                  <button
-                    onClick={() => onTaskDelete(task.id, task.title)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium text-left"
-                  >
-                    削除
-                  </button>
+                {editingTask === task.id ? (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleTaskSave(task.id)}
+                      className="text-green-600 hover:text-green-800 text-sm font-medium"
+                    >
+                      保存
+                    </button>
+                    <button
+                      onClick={() => handleTaskCancel(task.id)}
+                      className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => toggleTaskExpansion(task.id)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium text-left"
+                    >
+                      {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
+                    </button>
+                    {/* Show edit button: local tasks by creator, common tasks by central */}
+                    {onTaskUpdate && canEditTask(task) && (
+                      <button
+                        onClick={() => handleTaskEdit(task)}
+                        className="text-yellow-600 hover:text-yellow-800 text-sm font-medium text-left"
+                      >
+                        タスクを編集
+                      </button>
+                    )}
+                    {/* Show delete button: local tasks by creator, common tasks by central */}
+                    {onTaskDelete && canEditTask(task) && (
+                      <button
+                        onClick={() => onTaskDelete(task.id, task.title)}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium text-left"
+                      >
+                        削除
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

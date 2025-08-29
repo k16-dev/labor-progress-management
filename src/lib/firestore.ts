@@ -172,12 +172,20 @@ export class FirestoreService {
   }
 
   static async updateTask(id: string, updates: Partial<Task>): Promise<void> {
-    if (!db) throw new Error('Database not initialized');
-    const docRef = doc(db, 'tasks', id);
-    await updateDoc(docRef, { 
-      ...updates, 
-      updatedAt: new Date().toISOString().split('T')[0] 
-    });
+    if (!isFirebaseConfigured() || !db) {
+      return MockFirestoreService.updateTask(id, updates);
+    }
+    
+    try {
+      const docRef = doc(db, 'tasks', id);
+      await updateDoc(docRef, { 
+        ...updates, 
+        updatedAt: new Date().toISOString().split('T')[0] 
+      });
+    } catch (error) {
+      console.warn('Firebase error, using mock data:', error);
+      return MockFirestoreService.updateTask(id, updates);
+    }
   }
 
   static async deleteTask(id: string): Promise<void> {

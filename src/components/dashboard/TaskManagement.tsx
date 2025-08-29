@@ -68,6 +68,16 @@ export default function TaskManagement() {
     }
   };
 
+  const handleTaskUpdate = async (taskId: string, updates: { title: string; memo?: string }) => {
+    try {
+      await FirestoreService.updateTask(taskId, updates);
+      await loadData(); // データを再読み込み
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      alert('タスクの更新に失敗しました');
+    }
+  };
+
   const handleTaskCreated = () => {
     setShowNewTaskForm(false);
     loadData();
@@ -187,6 +197,7 @@ export default function TaskManagement() {
               progress={progress}
               onProgressUpdate={handleProgressUpdate}
               onTaskDelete={handleTaskDelete}
+              onTaskUpdate={handleTaskUpdate}
               currentOrgId={user?.orgId || ''}
             />
           ) : (
@@ -207,6 +218,7 @@ export default function TaskManagement() {
                         progress={getTaskProgress(task.id)}
                         onProgressUpdate={handleProgressUpdate}
                         onTaskDelete={handleTaskDelete}
+                        onTaskUpdate={handleTaskUpdate}
                         currentOrgId={user?.orgId || ''}
                       />
                     ))}

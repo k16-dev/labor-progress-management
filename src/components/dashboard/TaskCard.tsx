@@ -8,13 +8,17 @@ interface TaskCardProps {
   progress?: Progress;
   onProgressUpdate: (taskId: string, status: TaskStatus, memo?: string) => void;
   onTaskDelete?: (taskId: string, taskTitle: string) => void;
+  onTaskUpdate?: (taskId: string, updates: { title: string; memo?: string }) => void;
   currentOrgId?: string;
 }
 
-export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelete, currentOrgId }: TaskCardProps) {
+export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelete, onTaskUpdate, currentOrgId }: TaskCardProps) {
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState(progress?.memo || '');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isEditingTask, setIsEditingTask] = useState(false);
+  const [taskTitle, setTaskTitle] = useState(task.title);
+  const [taskMemo, setTaskMemo] = useState(task.memo || '');
 
   const getStatusColor = (status: TaskStatus) => {
     switch (status) {
@@ -47,6 +51,42 @@ export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelet
     }
   };
 
+  const handleTaskEditStart = () => {
+    setTaskTitle(task.title);
+    setTaskMemo(task.memo || '');
+    setIsEditingTask(true);
+  };
+
+  const handleTaskEditSave = async () => {
+    if (!onTaskUpdate) return;
+
+    setIsUpdating(true);
+    try {
+      await onTaskUpdate(task.id, {
+        title: taskTitle,
+        memo: taskMemo
+      });
+      setIsEditingTask(false);
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      alert('タスクの更新に失敗しました');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleTaskEditCancel = () => {
+    setTaskTitle(task.title);
+    setTaskMemo(task.memo || '');
+    setIsEditingTask(false);
+  };
+
+  const canEditTask = (): boolean => {
+    // ローカルタスクは作成者のみ、共通タスクは中央のみ編集可能
+    return (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
+           (task.kind === 'common' && currentOrgId === 'org_000');
+  };
+
   const currentStatus = progress?.status || '未着手';
 
   return (
@@ -54,17 +94,41 @@ export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelet
       {/* Task Header */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
+          {isEditingTask ? (
+            <div className="flex-1 mr-2 space-y-2">
+              <input
+                type="text"
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="タスクタイトル"
+                maxLength={100}
+                disabled={isUpdating}
+              />
+              <textarea
+                value={taskMemo}
+                onChange={(e) => setTaskMemo(e.target.value)}
+                className="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="メモ（任意）"
+                rows={2}
+                maxLength={200}
+                disabled={isUpdating}
+              />
+            </div>
+          ) : (
+            <div className="flex-1">
+              <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
+              {task.memo && (
+                <p className="text-xs text-gray-600 mb-2">{task.memo}</p>
+              )}
+            </div>
+          )}
           <span className={`text-xs px-2 py-1 rounded-full ${
             task.kind === 'common' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
           }`}>
             {task.kind === 'common' ? '共通' : 'ローカル'}
           </span>
         </div>
-        
-        {task.memo && (
-          <p className="text-xs text-gray-600 mb-2">{task.memo}</p>
-        )}
       </div>
 
       {/* Status */}
@@ -89,19 +153,52 @@ export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelet
 
       {/* Actions */}
       <div className="space-y-2">
-        {/* Delete Button */}
-        {onTaskDelete && (
-          (task.kind === 'local' && task.createdByOrgId === currentOrgId) || 
-          (task.kind === 'common' && currentOrgId === 'org_000')
-        ) && (
+        {/* Task Edit Buttons */}
+        {isEditingTask ? (
           <div className="pb-2 border-b border-gray-100">
-            <button
-              onClick={() => onTaskDelete(task.id, task.title)}
-              className="text-xs text-red-600 hover:text-red-800 font-medium"
-            >
-              タスクを削除
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleTaskEditSave}
+                disabled={isUpdating || !taskTitle.trim()}
+                className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50"
+              >
+                {isUpdating ? '保存中...' : '保存'}
+              </button>
+              <button
+                onClick={handleTaskEditCancel}
+                disabled={isUpdating}
+                className="text-xs bg-gray-300 text-gray-700 px-2 py-1 rounded hover:bg-gray-400 disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+            </div>
           </div>
+        ) : (
+          <>
+            {/* Task Edit/Delete Buttons */}
+            {(onTaskUpdate || onTaskDelete) && canEditTask() && (
+              <div className="pb-2 border-b border-gray-100">
+                <div className="flex space-x-2">
+                  {onTaskUpdate && (
+                    <button
+                      onClick={handleTaskEditStart}
+                      className="text-xs text-yellow-600 hover:text-yellow-800 font-medium"
+                    >
+                      タスクを編集
+                    </button>
+                  )}
+                  {onTaskDelete && (
+                    <button
+                      onClick={() => onTaskDelete(task.id, task.title)}
+                      className="text-xs text-red-600 hover:text-red-800 font-medium"
+                    >
+                      タスクを削除
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Communication Section */}

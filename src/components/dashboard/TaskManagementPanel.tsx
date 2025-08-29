@@ -20,6 +20,8 @@ export default function TaskManagementPanel({ tasks, onTaskCreated }: TaskManage
   const [error, setError] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [reorderingCategory, setReorderingCategory] = useState<TaskCategory | null>(null);
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [editingTaskValues, setEditingTaskValues] = useState<{ [key: string]: { title: string; memo?: string } }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +128,39 @@ export default function TaskManagementPanel({ tasks, onTaskCreated }: TaskManage
 
     handleTaskReorder(category, reorderedTasks);
     setDraggedTaskId(null);
+  };
+
+  const handleTaskEdit = (task: Task) => {
+    setEditingTaskValues({
+      ...editingTaskValues,
+      [task.id]: {
+        title: task.title,
+        memo: task.memo || ''
+      }
+    });
+    setEditingTask(task.id);
+  };
+
+  const handleTaskSave = async (taskId: string) => {
+    try {
+      const updates = editingTaskValues[taskId];
+      if (updates) {
+        await FirestoreService.updateTask(taskId, updates);
+        onTaskCreated(); // データを再読み込み
+      }
+      setEditingTask(null);
+    } catch (error) {
+      console.error('Failed to save task:', error);
+      alert('タスクの保存に失敗しました');
+    }
+  };
+
+  const handleTaskCancel = (taskId: string) => {
+    setEditingTask(null);
+    setEditingTaskValues({
+      ...editingTaskValues,
+      [taskId]: { title: '', memo: '' }
+    });
   };
 
   const getCategoryLabel = (category: TaskCategory) => {
@@ -257,30 +292,100 @@ export default function TaskManagementPanel({ tasks, onTaskCreated }: TaskManage
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm text-gray-500 font-mono">#{index + 1}</span>
-                              <div className="w-1.5 h-4 bg-gray-300 rounded cursor-move"></div>
+                          {editingTask === task.id ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-500 font-mono">#{index + 1}</span>
+                                <div className="w-1.5 h-4 bg-gray-300 rounded cursor-move"></div>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  共通
+                                </span>
+                              </div>
+                              <input
+                                type="text"
+                                value={editingTaskValues[task.id]?.title || ''}
+                                onChange={(e) => setEditingTaskValues({
+                                  ...editingTaskValues,
+                                  [task.id]: {
+                                    ...editingTaskValues[task.id],
+                                    title: e.target.value
+                                  }
+                                })}
+                                className="w-full text-md font-medium border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="タスクタイトル"
+                                maxLength={100}
+                              />
+                              <textarea
+                                value={editingTaskValues[task.id]?.memo || ''}
+                                onChange={(e) => setEditingTaskValues({
+                                  ...editingTaskValues,
+                                  [task.id]: {
+                                    ...editingTaskValues[task.id],
+                                    memo: e.target.value
+                                  }
+                                })}
+                                className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="メモ（任意）"
+                                rows={3}
+                                maxLength={200}
+                              />
                             </div>
-                            <h4 className="text-md font-medium text-gray-900">{task.title}</h4>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              共通
-                            </span>
-                          </div>
-                          {task.memo && (
-                            <p className="mt-2 text-sm text-gray-600">{task.memo}</p>
+                          ) : (
+                            <>
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-500 font-mono">#{index + 1}</span>
+                                  <div className="w-1.5 h-4 bg-gray-300 rounded cursor-move"></div>
+                                </div>
+                                <h4 className="text-md font-medium text-gray-900">{task.title}</h4>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  共通
+                                </span>
+                              </div>
+                              {task.memo && (
+                                <p className="mt-2 text-sm text-gray-600">{task.memo}</p>
+                              )}
+                              <p className="mt-1 text-xs text-gray-500">
+                                作成日: {task.createdAt} | 更新日: {task.updatedAt} | 表示順: {task.displayOrder || '未設定'}
+                              </p>
+                            </>
                           )}
-                          <p className="mt-1 text-xs text-gray-500">
-                            作成日: {task.createdAt} | 更新日: {task.updatedAt} | 表示順: {task.displayOrder || '未設定'}
-                          </p>
                         </div>
-                        <button
-                          onClick={() => handleDelete(task.id)}
-                          disabled={!!reorderingCategory}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium ml-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          削除
-                        </button>
+                        <div className="ml-4 flex flex-col space-y-2">
+                          {editingTask === task.id ? (
+                            <>
+                              <button
+                                onClick={() => handleTaskSave(task.id)}
+                                className="text-green-600 hover:text-green-800 text-sm font-medium"
+                              >
+                                保存
+                              </button>
+                              <button
+                                onClick={() => handleTaskCancel(task.id)}
+                                className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                              >
+                                キャンセル
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleTaskEdit(task)}
+                                disabled={!!reorderingCategory}
+                                className="text-yellow-600 hover:text-yellow-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                編集
+                              </button>
+                              <button
+                                onClick={() => handleDelete(task.id)}
+                                disabled={!!reorderingCategory}
+                                className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                削除
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
