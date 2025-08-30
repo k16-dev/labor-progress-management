@@ -30,6 +30,11 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
   };
 
   const handleMemoEdit = (taskId: string) => {
+    // タスク編集中の場合は先にキャンセル
+    if (editingTask === taskId) {
+      handleTaskCancel(taskId);
+    }
+    
     const currentProgress = getTaskProgress(taskId);
     setMemoValues({
       ...memoValues,
@@ -65,6 +70,11 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
   };
 
   const handleTaskEdit = (task: Task) => {
+    // メモ編集中の場合は先にキャンセル
+    if (editingMemo === task.id) {
+      handleMemoCancel(task.id);
+    }
+    
     setEditingTaskValues({
       ...editingTaskValues,
       [task.id]: {
@@ -201,6 +211,15 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-1">
+                      {/* 連絡事項ボタンは常に表示 */}
+                      <button
+                        onClick={() => toggleTaskExpansion(task.id)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium text-left"
+                      >
+                        {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
+                      </button>
+                      
+                      {/* タスク編集・削除ボタン */}
                       {editingTask === task.id ? (
                         <div className="flex space-x-2">
                           <button
@@ -218,12 +237,6 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                         </div>
                       ) : (
                         <div className="flex space-x-2">
-                          <button
-                            onClick={() => toggleTaskExpansion(task.id)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
-                          </button>
                           {/* Show edit button: local tasks by creator, common tasks by central */}
                           {onTaskUpdate && canEditTask(task) && (
                             <button
@@ -328,6 +341,15 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
               )}
 
               <div className="flex flex-col space-y-2">
+                {/* 連絡事項ボタンは常に表示 */}
+                <button
+                  onClick={() => toggleTaskExpansion(task.id)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium text-left"
+                >
+                  {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
+                </button>
+                
+                {/* タスク編集・削除ボタン */}
                 {editingTask === task.id ? (
                   <div className="flex space-x-2">
                     <button
@@ -344,13 +366,7 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                     </button>
                   </div>
                 ) : (
-                  <>
-                    <button
-                      onClick={() => toggleTaskExpansion(task.id)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium text-left"
-                    >
-                      {expandedTask === task.id ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
-                    </button>
+                  <div className="flex flex-col space-y-1">
                     {/* Show edit button: local tasks by creator, common tasks by central */}
                     {onTaskUpdate && canEditTask(task) && (
                       <button
@@ -369,7 +385,7 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                         削除
                       </button>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             </div>
