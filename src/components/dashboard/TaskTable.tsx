@@ -260,6 +260,86 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                     </div>
                   </td>
                 </tr>
+                {/* Expanded Task Details for this specific task */}
+                {expandedTask === task.id && (
+                  <tr>
+                    <td colSpan={5} className="px-0 py-0">
+                      <div className="border-t border-gray-200 bg-gray-50 p-6">
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-gray-900">タスク詳細: {task.title}</h4>
+                          
+                          {/* Memo Edit */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">中央への連絡事項</label>
+                            <p className="text-xs text-gray-600 mb-2">中央への連絡事項があれば記入してください</p>
+                            {editingMemo === task.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={memoValues[task.id] || ''}
+                                  onChange={(e) => setMemoValues({ ...memoValues, [task.id]: e.target.value })}
+                                  maxLength={200}
+                                  rows={3}
+                                  className="w-full text-sm p-3 border-2 border-blue-300 bg-blue-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
+                                  placeholder="連絡事項を入力してください（200文字以内）"
+                                />
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500">
+                                    {(memoValues[task.id] || '').length}/200文字
+                                  </span>
+                                  <div className="space-x-2">
+                                    <button
+                                      onClick={() => handleMemoSave(task.id)}
+                                      className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                                    >
+                                      保存
+                                    </button>
+                                    <button
+                                      onClick={() => handleMemoCancel(task.id)}
+                                      className="text-sm bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
+                                    >
+                                      キャンセル
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="text-sm text-gray-600 min-h-[60px] p-3 bg-white border border-gray-300 rounded-md">
+                                  {getTaskProgress(task.id)?.memo || '連絡事項はありません'}
+                                </div>
+                                <button
+                                  onClick={() => handleMemoEdit(task.id)}
+                                  className="text-sm text-blue-600 hover:text-blue-800"
+                                >
+                                  編集
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Memo History */}
+                          {getTaskProgress(task.id)?.memoHistory && getTaskProgress(task.id)!.memoHistory.length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-700 mb-2">
+                                連絡履歴 ({getTaskProgress(task.id)!.memoHistory.filter(h => h.memo.trim()).length})
+                              </h5>
+                              <div className="space-y-2 max-h-32 overflow-y-auto">
+                                {getTaskProgress(task.id)!.memoHistory.filter(h => h.memo.trim()).slice().reverse().map((history, index) => (
+                                  <div key={index} className="bg-white p-3 rounded border-l-4 border-blue-200">
+                                    <p className="text-sm text-gray-700">{history.memo}</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {new Date(history.timestamp).toLocaleString('ja-JP')}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               );
             })}
           </tbody>
@@ -388,96 +468,88 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                   </div>
                 )}
               </div>
+
+              {/* Expanded Task Details for mobile */}
+              {expandedTask === task.id && (
+                <div className="border-t border-gray-200 bg-gray-50 p-4 mt-3">
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-gray-900">タスク詳細: {task.title}</h4>
+                    
+                    {/* Memo Edit */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">中央への連絡事項</label>
+                      <p className="text-xs text-gray-600 mb-2">中央への連絡事項があれば記入してください</p>
+                      {editingMemo === task.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={memoValues[task.id] || ''}
+                            onChange={(e) => setMemoValues({ ...memoValues, [task.id]: e.target.value })}
+                            maxLength={200}
+                            rows={3}
+                            className="w-full text-sm p-3 border-2 border-blue-300 bg-blue-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
+                            placeholder="連絡事項を入力してください（200文字以内）"
+                          />
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">
+                              {(memoValues[task.id] || '').length}/200文字
+                            </span>
+                            <div className="space-x-2">
+                              <button
+                                onClick={() => handleMemoSave(task.id)}
+                                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                              >
+                                保存
+                              </button>
+                              <button
+                                onClick={() => handleMemoCancel(task.id)}
+                                className="text-sm bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
+                              >
+                                キャンセル
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="text-sm text-gray-600 min-h-[60px] p-3 bg-white border border-gray-300 rounded-md">
+                            {getTaskProgress(task.id)?.memo || '連絡事項はありません'}
+                          </div>
+                          <button
+                            onClick={() => handleMemoEdit(task.id)}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            編集
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Memo History */}
+                    {getTaskProgress(task.id)?.memoHistory && getTaskProgress(task.id)!.memoHistory.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">
+                          連絡履歴 ({getTaskProgress(task.id)!.memoHistory.filter(h => h.memo.trim()).length})
+                        </h5>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {getTaskProgress(task.id)!.memoHistory.filter(h => h.memo.trim()).slice().reverse().map((history, index) => (
+                            <div key={index} className="bg-white p-3 rounded border-l-4 border-blue-200">
+                              <p className="text-sm text-gray-700">{history.memo}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(history.timestamp).toLocaleString('ja-JP')}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Expanded Task Details */}
-      {expandedTask && (
-        <div className="border-t border-gray-200 bg-gray-50 p-6">
-          {(() => {
-            const task = tasks.find(t => t.id === expandedTask);
-            const taskProgress = getTaskProgress(expandedTask);
-            
-            if (!task) return null;
-
-            return (
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">タスク詳細: {task.title}</h4>
-                
-                {/* Memo Edit */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">中央への連絡事項</label>
-                  <p className="text-xs text-gray-600 mb-2">中央への連絡事項があれば記入してください</p>
-                  {editingMemo === task.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={memoValues[task.id] || ''}
-                        onChange={(e) => setMemoValues({ ...memoValues, [task.id]: e.target.value })}
-                        maxLength={200}
-                        rows={3}
-                        className="w-full text-sm p-3 border-2 border-blue-300 bg-blue-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
-                        placeholder="連絡事項を入力してください（200文字以内）"
-                      />
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">
-                          {(memoValues[task.id] || '').length}/200文字
-                        </span>
-                        <div className="space-x-2">
-                          <button
-                            onClick={() => handleMemoSave(task.id)}
-                            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                          >
-                            保存
-                          </button>
-                          <button
-                            onClick={() => handleMemoCancel(task.id)}
-                            className="text-sm bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
-                          >
-                            キャンセル
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="text-sm text-gray-600 min-h-[60px] p-3 bg-white border border-gray-300 rounded-md">
-                        {taskProgress?.memo || '連絡事項はありません'}
-                      </div>
-                      <button
-                        onClick={() => handleMemoEdit(task.id)}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        編集
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Memo History */}
-                {taskProgress?.memoHistory && taskProgress.memoHistory.length > 0 && (
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 mb-2">
-                      連絡履歴 ({taskProgress.memoHistory.filter(h => h.memo.trim()).length})
-                    </h5>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {taskProgress.memoHistory.filter(h => h.memo.trim()).slice().reverse().map((history, index) => (
-                        <div key={index} className="bg-white p-3 rounded border-l-4 border-blue-200">
-                          <p className="text-sm text-gray-700">{history.memo}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(history.timestamp).toLocaleString('ja-JP')}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
     </div>
   );
 }
