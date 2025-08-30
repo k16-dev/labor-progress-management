@@ -202,36 +202,36 @@ export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelet
         )}
 
         {/* Communication Section */}
-        <div>
-          <button
-            onClick={() => setShowMemo(!showMemo)}
-            className="text-xs text-blue-600 hover:text-blue-800"
-          >
-            {showMemo ? '連絡事項を閉じる' : '中央への連絡事項を入力・編集'}
-          </button>
+        <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+          <div className="flex items-center mb-2">
+            <svg className="w-3 h-3 text-blue-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"></path>
+            </svg>
+            <span className="text-xs font-medium text-blue-800">中央への連絡・報告</span>
+          </div>
           
-          {showMemo && (
-            <div className="mt-2 space-y-2">
-              <div className="text-xs text-gray-600 mb-1">
-                中央への連絡事項があれば記入してください
+          {showMemo ? (
+            <div className="space-y-2">
+              <div className="text-xs text-blue-700">
+                進捗状況や課題があれば中央本部にお知らせください
               </div>
               <textarea
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 maxLength={200}
                 rows={3}
-                className="w-full text-xs p-3 border-2 border-blue-300 bg-blue-50 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
-                placeholder="連絡事項を入力してください（200文字以内）"
+                className="w-full text-xs p-3 border-2 border-blue-300 bg-white rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                placeholder="例：作業に遅れが生じています / 追加の資料が必要です / 順調に進んでいます"
               />
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">{memo.length}/200文字</span>
+                <span className="text-xs text-blue-600">{memo.length}/200文字</span>
                 <div className="space-x-1">
                   <button
                     onClick={handleMemoUpdate}
                     disabled={isUpdating}
-                    className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+                    className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50 font-medium"
                   >
-                    保存
+                    📤 送信
                   </button>
                   <button
                     onClick={() => {
@@ -244,6 +244,23 @@ export default function TaskCard({ task, progress, onProgressUpdate, onTaskDelet
                   </button>
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-xs text-gray-700 min-h-[40px] p-2 bg-white border border-blue-200 rounded shadow-sm">
+                {progress?.memo || (
+                  <span className="text-gray-500 italic">まだ連絡事項はありません</span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowMemo(true)}
+                className="inline-flex items-center text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 font-medium"
+              >
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                </svg>
+                中央に連絡する
+              </button>
             </div>
           )}
         </div>

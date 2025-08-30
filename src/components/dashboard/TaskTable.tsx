@@ -269,34 +269,39 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                         <div className="space-y-4">
                           <h4 className="font-medium text-gray-900">タスク詳細: {task.title}</h4>
                           
-                          {/* Memo Edit */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">中央への連絡事項</label>
-                            <p className="text-xs text-gray-600 mb-2">中央への連絡事項があれば記入してください</p>
+                          {/* Communication Section */}
+                          <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                            <div className="flex items-center mb-2">
+                              <svg className="w-4 h-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"></path>
+                              </svg>
+                              <label className="text-sm font-medium text-blue-800">中央への連絡・報告</label>
+                            </div>
+                            <p className="text-xs text-blue-700 mb-3">進捗状況や課題があれば中央本部にお知らせください</p>
                             {editingMemo === task.id ? (
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 <textarea
                                   value={memoValues[task.id] || ''}
                                   onChange={(e) => setMemoValues({ ...memoValues, [task.id]: e.target.value })}
                                   maxLength={200}
-                                  rows={3}
-                                  className="w-full text-sm p-3 border-2 border-blue-300 bg-blue-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
-                                  placeholder="連絡事項を入力してください（200文字以内）"
+                                  rows={4}
+                                  className="w-full text-sm p-3 border-2 border-blue-300 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                                  placeholder="例：作業に遅れが生じています / 追加の資料が必要です / 順調に進んでいます"
                                 />
                                 <div className="flex justify-between items-center">
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-xs text-blue-600">
                                     {(memoValues[task.id] || '').length}/200文字
                                   </span>
                                   <div className="space-x-2">
                                     <button
                                       onClick={() => handleMemoSave(task.id)}
-                                      className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                                      className="text-sm bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-medium shadow-sm"
                                     >
-                                      保存
+                                      📤 中央に送信
                                     </button>
                                     <button
                                       onClick={() => handleMemoCancel(task.id)}
-                                      className="text-sm bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
+                                      className="text-sm bg-gray-300 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-400"
                                     >
                                       キャンセル
                                     </button>
@@ -304,15 +309,20 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                                 </div>
                               </div>
                             ) : (
-                              <div className="space-y-2">
-                                <div className="text-sm text-gray-600 min-h-[60px] p-3 bg-white border border-gray-300 rounded-md">
-                                  {getTaskProgress(task.id)?.memo || '連絡事項はありません'}
+                              <div className="space-y-3">
+                                <div className="text-sm text-gray-700 min-h-[60px] p-3 bg-white border border-blue-200 rounded-md shadow-sm">
+                                  {getTaskProgress(task.id)?.memo || (
+                                    <span className="text-gray-500 italic">まだ連絡事項はありません</span>
+                                  )}
                                 </div>
                                 <button
                                   onClick={() => handleMemoEdit(task.id)}
-                                  className="text-sm text-blue-600 hover:text-blue-800"
+                                  className="inline-flex items-center text-sm bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium shadow-sm"
                                 >
-                                  編集
+                                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                                  </svg>
+                                  中央に連絡・報告する
                                 </button>
                               </div>
                             )}
@@ -477,34 +487,39 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                   <div className="space-y-4">
                     <h4 className="font-medium text-gray-900">タスク詳細: {task.title}</h4>
                     
-                    {/* Memo Edit */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">中央への連絡事項</label>
-                      <p className="text-xs text-gray-600 mb-2">中央への連絡事項があれば記入してください</p>
+                    {/* Communication Section - Mobile */}
+                    <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+                      <div className="flex items-center mb-2">
+                        <svg className="w-4 h-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"></path>
+                        </svg>
+                        <label className="text-sm font-medium text-blue-800">中央への連絡・報告</label>
+                      </div>
+                      <p className="text-xs text-blue-700 mb-3">進捗状況や課題があれば中央本部にお知らせください</p>
                       {editingMemo === task.id ? (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <textarea
                             value={memoValues[task.id] || ''}
                             onChange={(e) => setMemoValues({ ...memoValues, [task.id]: e.target.value })}
                             maxLength={200}
-                            rows={3}
-                            className="w-full text-sm p-3 border-2 border-blue-300 bg-blue-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
-                            placeholder="連絡事項を入力してください（200文字以内）"
+                            rows={4}
+                            className="w-full text-sm p-3 border-2 border-blue-300 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            placeholder="例：作業に遅れが生じています / 追加の資料が必要です / 順調に進んでいます"
                           />
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-blue-600">
                               {(memoValues[task.id] || '').length}/200文字
                             </span>
                             <div className="space-x-2">
                               <button
                                 onClick={() => handleMemoSave(task.id)}
-                                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                                className="text-sm bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 font-medium"
                               >
-                                保存
+                                📤 送信
                               </button>
                               <button
                                 onClick={() => handleMemoCancel(task.id)}
-                                className="text-sm bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
+                                className="text-sm bg-gray-300 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-400"
                               >
                                 キャンセル
                               </button>
@@ -512,15 +527,20 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          <div className="text-sm text-gray-600 min-h-[60px] p-3 bg-white border border-gray-300 rounded-md">
-                            {getTaskProgress(task.id)?.memo || '連絡事項はありません'}
+                        <div className="space-y-3">
+                          <div className="text-sm text-gray-700 min-h-[50px] p-3 bg-white border border-blue-200 rounded-md shadow-sm">
+                            {getTaskProgress(task.id)?.memo || (
+                              <span className="text-gray-500 italic">まだ連絡事項はありません</span>
+                            )}
                           </div>
                           <button
                             onClick={() => handleMemoEdit(task.id)}
-                            className="text-sm text-blue-600 hover:text-blue-800"
+                            className="inline-flex items-center text-sm bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 font-medium"
                           >
-                            編集
+                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                            </svg>
+                            中央に連絡する
                           </button>
                         </div>
                       )}
