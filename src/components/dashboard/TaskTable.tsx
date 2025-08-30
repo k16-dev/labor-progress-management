@@ -144,7 +144,8 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
               const currentStatus = taskProgress?.status || '未着手';
               
               return (
-                <tr key={task.id} className="hover:bg-gray-50">
+                <>
+                  <tr key={task.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
                       {editingTask === task.id ? (
@@ -340,6 +341,7 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                     </td>
                   </tr>
                 )}
+                </>
               );
             })}
           </tbody>
