@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Task, Progress, TaskStatus } from '@/types';
 
 interface TaskTableProps {
@@ -144,8 +144,8 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
               const currentStatus = taskProgress?.status || '未着手';
               
               return (
-                <>
-                  <tr key={task.id} className="hover:bg-gray-50">
+                <React.Fragment key={task.id}>
+                  <tr className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
                       {editingTask === task.id ? (
@@ -351,7 +351,7 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
                     </td>
                   </tr>
                 )}
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>

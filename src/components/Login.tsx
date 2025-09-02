@@ -51,9 +51,9 @@ export default function Login({ onLogin }: LoginProps) {
       if (!AuthService.validateLogin(loginData)) {
         console.log('Validation failed');
         if (loginData.role === 'central') {
-          setError('中央のパスワードが正しくありません（正解: 1050）');
+          setError('中央のパスワードが正しくありません');
         } else {
-          setError('パスワードが正しくないか、組織が選択されていません（パスワード: 1234）');
+          setError('パスワードが正しくないか、組織が選択されていません');
         }
         setIsLoading(false);
         return;
