@@ -380,15 +380,17 @@ export class FirestoreService {
         const docRef = doc(currentDb, 'progress', existing.id);
         await updateDoc(docRef, updateData);
       } else {
-        const newProgress: Omit<Progress, 'id'> = {
+        const base = {
           taskId,
           orgId,
           status,
           memo: sanitizedMemo || '',
           memoHistory: sanitizedMemo && sanitizedMemo.length > 0 ? [{ memo: sanitizedMemo, orgId, timestamp: nowIso }] : [],
-          completedAt: status === '完了' ? today : undefined,
           updatedAt: today,
         };
+        const newProgress: Omit<Progress, 'id'> = status === '完了'
+          ? { ...base, completedAt: today }
+          : base;
 
         await addDoc(collection(currentDb, 'progress'), newProgress);
       }
