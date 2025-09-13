@@ -27,6 +27,11 @@ const isFirebaseConfigured = () => {
 };
 
 export class FirestoreService {
+  // undefined を除去するユーティリティ
+  private static pruneUndefined<T extends Record<string, any>>(obj: T): T {
+    const entries = Object.entries(obj).filter(([_, v]) => v !== undefined);
+    return Object.fromEntries(entries) as T;
+  }
   static async getOrganizations(): Promise<Organization[]> {
     if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getOrganizations();
@@ -347,7 +352,7 @@ export class FirestoreService {
         }
         
         const docRef = doc(currentDb, 'progress', existing.id);
-        await updateDoc(docRef, updates);
+        await updateDoc(docRef, FirestoreService.pruneUndefined(updates));
       } else {
         // Firestore に undefined を送らないよう、completedAt は条件付きで付与
         const base: Omit<Progress, 'id'> = {
@@ -362,7 +367,10 @@ export class FirestoreService {
           ? { ...base, completedAt: today }
           : base;
 
-        await addDoc(collection(currentDb, 'progress'), newProgress);
+        await addDoc(
+          collection(currentDb, 'progress'),
+          FirestoreService.pruneUndefined(newProgress)
+        );
       }
     } catch (error) {
       console.error('Firebase error in createOrUpdateProgress:', error);
