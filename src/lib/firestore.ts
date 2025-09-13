@@ -39,9 +39,38 @@ const invalidate = (keys: Array<keyof typeof cache>) => {
   for (const k of keys) cache[k].ts = 0;
 };
 
+// 永続キャッシュ（localStorage）: オフラインや一時的な接続不良時でも前回の取得結果を表示
+type PersistKey = 'orgs' | 'tasks' | 'progress';
+const PERSIST_KEY = 'lpm_cache_v1';
+
+function readPersist<K extends PersistKey> (key: K): { ts: number; data: unknown[] } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw) as Record<string, { ts: number; data: unknown[] }>;
+    return obj[key] || null;
+  } catch {
+    return null;
+  }
+}
+
+function writePersist<K extends PersistKey> (key: K, ts: number, data: unknown[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    const obj: Record<string, { ts: number; data: unknown[] }> = raw ? JSON.parse(raw) : {};
+    obj[key] = { ts, data };
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(obj));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export class FirestoreService {
   static async getOrganizations(): Promise<Organization[]> {
     if (!isFirebaseConfigured() || !db) {
+      // Firebase未設定時はモック
       return MockFirestoreService.getOrganizations();
     }
     // キャッシュ利用
@@ -57,10 +86,15 @@ export class FirestoreService {
         ...doc.data()
       })) as Organization[];
       cache.orgs = { ts: nowTs(), data: allOrgs };
+      writePersist('orgs', cache.orgs.ts, allOrgs);
       // JavaScript側でソート
       return allOrgs.sort((a, b) => a.displayOrder - b.displayOrder);
     } catch (error) {
-      console.warn('Firebase error in getOrganizations, falling back to mock:', error);
+      console.warn('Firebase error in getOrganizations, using persisted or mock:', error);
+      const persisted = readPersist('orgs');
+      if (persisted && Array.isArray(persisted.data) && persisted.data.length > 0) {
+        return (persisted.data as Organization[]).sort((a, b) => a.displayOrder - b.displayOrder);
+      }
       return MockFirestoreService.getOrganizations();
     }
   }
@@ -114,10 +148,15 @@ export class FirestoreService {
         ...doc.data()
       })) as Task[];
       cache.tasks = { ts: nowTs(), data: allTasks };
+      writePersist('tasks', cache.tasks.ts, allTasks);
       // JavaScript側でソート
       return allTasks.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
-      console.warn('Firebase error in getTasks, falling back to mock:', error);
+      console.warn('Firebase error in getTasks, using persisted or mock:', error);
+      const persisted = readPersist('tasks');
+      if (persisted && Array.isArray(persisted.data) && persisted.data.length > 0) {
+        return (persisted.data as Task[]).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      }
       return MockFirestoreService.getTasks();
     }
   }
@@ -224,10 +263,15 @@ export class FirestoreService {
         ...doc.data()
       })) as Progress[];
       cache.progress = { ts: nowTs(), data: allProgress };
+      writePersist('progress', cache.progress.ts, allProgress);
       // JavaScript側でソート
       return allProgress.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     } catch (error) {
-      console.warn('Firebase error in getProgress, falling back to mock:', error);
+      console.warn('Firebase error in getProgress, using persisted or mock:', error);
+      const persisted = readPersist('progress');
+      if (persisted && Array.isArray(persisted.data) && persisted.data.length > 0) {
+        return (persisted.data as Progress[]).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      }
       return MockFirestoreService.getProgress();
     }
   }
