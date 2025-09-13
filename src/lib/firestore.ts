@@ -27,10 +27,16 @@ const isFirebaseConfigured = () => {
 };
 
 export class FirestoreService {
-  // undefined を除去するユーティリティ
-  private static pruneUndefined<T extends Record<string, any>>(obj: T): T {
-    const entries = Object.entries(obj).filter(([_, v]) => v !== undefined);
-    return Object.fromEntries(entries) as T;
+  // undefined を除去するユーティリティ（ESLint対応: any未使用/未使用変数なし）
+  private static pruneUndefined<T extends Record<string, unknown>>(obj: T): T {
+    const result: Partial<T> = {};
+    (Object.keys(obj) as Array<keyof T>).forEach((key) => {
+      const value = obj[key];
+      if (value !== undefined) {
+        result[key] = value;
+      }
+    });
+    return result as T;
   }
   static async getOrganizations(): Promise<Organization[]> {
     if (!isFirebaseConfigured() || !db) {
