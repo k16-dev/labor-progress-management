@@ -50,10 +50,16 @@ export default function TaskManagement() {
       await FirestoreService.createOrUpdateProgress(taskId, user.orgId, status, memo);
       await loadData(); // データを再読み込み
     } catch (error) {
-      const e = error as any;
-      console.error('Failed to update progress:', e);
-      const code = e?.code || e?.name || 'unknown-error';
-      const message = e?.message || String(e);
+      console.error('Failed to update progress:', error);
+      let code = 'unknown-error';
+      let message = 'Unknown error';
+      if (typeof error === 'object' && error !== null) {
+        const maybe = error as { code?: string; message?: string; name?: string };
+        code = maybe.code ?? maybe.name ?? code;
+        message = maybe.message ?? message;
+      } else if (typeof error === 'string') {
+        message = error;
+      }
       alert(`進捗の更新に失敗しました\ncode: ${code}\nmessage: ${message}`);
     }
   };
