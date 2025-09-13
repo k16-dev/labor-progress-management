@@ -31,7 +31,7 @@ service cloud.firestore {
 
       // 作成: 組織・タスクの存在確認、ローカルタスクは作成組織のみ
       allow create: if
-        request.resource.data.keys().hasOnly(['taskId','orgId','status','memo','memoHistory','completedAt','updatedAt','createdAt']) &&
+        request.resource.data.keys().hasOnly(['taskId','orgId','status','memo','memoHistory','completedAt','updatedAt']) &&
         isValidOrg(request.resource.data.orgId) &&
         exists(/databases/$(database)/documents/tasks/$(request.resource.data.taskId)) &&
         (
@@ -42,11 +42,11 @@ service cloud.firestore {
           )
         );
 
-      // 更新: taskId/orgIdは不変、変更されるフィールドのみチェック
+      // 更新: taskId/orgIdは不変、許可フィールドのみ変更可能
       allow update: if
         request.resource.data.taskId == resource.data.taskId &&
         request.resource.data.orgId == resource.data.orgId &&
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','memo','memoHistory','completedAt','updatedAt']);
+        request.resource.data.keys().hasOnly(['taskId','orgId','status','memo','memoHistory','completedAt','updatedAt']);
 
       // 削除禁止（必要ならAdmin SDKで）
       allow delete: if false;
