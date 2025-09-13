@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "ts-node --compiler-options='{\"module\":\"commonjs\"}' src/scripts/seed.ts",
-    "vercel-build": "next build",
     "export": "next build && next export"
   },
   "dependencies": {
