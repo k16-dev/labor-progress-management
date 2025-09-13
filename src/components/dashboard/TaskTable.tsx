@@ -25,8 +25,8 @@ export default function TaskTable({ tasks, progress, onProgressUpdate, onTaskDel
 
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
-    // ステータス変更時はメモを送らない（重複履歴・不要書き込み防止）
-    await onProgressUpdate(taskId, status);
+    const currentProgress = getTaskProgress(taskId);
+    await onProgressUpdate(taskId, status, currentProgress?.memo);
   };
 
   const handleMemoEdit = (taskId: string) => {
