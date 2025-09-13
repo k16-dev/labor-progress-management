@@ -60,8 +60,8 @@ export class FirestoreService {
       // JavaScript側でソート
       return allOrgs.sort((a, b) => a.displayOrder - b.displayOrder);
     } catch (error) {
-      console.warn('Firebase error in getOrganizations, falling back to mock:', error);
-      return MockFirestoreService.getOrganizations();
+      // Firebaseが構成されている場合はフォールバックせずエラーを伝播
+      throw error;
     }
   }
 
@@ -79,8 +79,7 @@ export class FirestoreService {
       }
       return null;
     } catch (error) {
-      console.warn('Firebase error in getOrganizationById, falling back to mock:', error);
-      return MockFirestoreService.getOrganizationById(id);
+      throw error;
     }
   }
 
@@ -93,8 +92,7 @@ export class FirestoreService {
       const allOrgs = await this.getOrganizations();
       return allOrgs.filter(o => o.role === role).sort((a, b) => a.displayOrder - b.displayOrder);
     } catch (error) {
-      console.warn('Firebase error in getOrganizationsByRole, falling back to mock:', error);
-      return MockFirestoreService.getOrganizationsByRole(role);
+      throw error;
     }
   }
 
@@ -117,8 +115,7 @@ export class FirestoreService {
       // JavaScript側でソート
       return allTasks.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
-      console.warn('Firebase error in getTasks, falling back to mock:', error);
-      return MockFirestoreService.getTasks();
+      throw error;
     }
   }
 
@@ -133,8 +130,7 @@ export class FirestoreService {
         .filter(t => t.category === category && t.active && t.kind === 'common')
         .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
-      console.warn('Firebase error in getTasksByCategory, falling back to mock:', error);
-      return MockFirestoreService.getTasksByCategory(category);
+      throw error;
     }
   }
 
@@ -149,8 +145,7 @@ export class FirestoreService {
         .filter(t => t.createdByOrgId === orgId && t.active && t.kind === 'local')
         .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
-      console.warn('Firebase error in getTasksByOrganization, falling back to mock:', error);
-      return MockFirestoreService.getTasksByOrganization(orgId);
+      throw error;
     }
   }
 
@@ -164,7 +159,7 @@ export class FirestoreService {
       invalidate(['tasks']);
       return docRef.id;
     } catch (error) {
-      console.warn('Firebase error in createTask:', error);
+      // Firebase構成時はモックにフォールバックせず、エラーを伝播
       throw error;
     }
   }
@@ -182,7 +177,6 @@ export class FirestoreService {
       });
       invalidate(['tasks']);
     } catch (error) {
-      console.warn('Firebase error in updateTask:', error);
       throw error;
     }
   }
@@ -227,8 +221,7 @@ export class FirestoreService {
       // JavaScript側でソート
       return allProgress.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     } catch (error) {
-      console.warn('Firebase error in getProgress, falling back to mock:', error);
-      return MockFirestoreService.getProgress();
+      throw error;
     }
   }
 
@@ -241,8 +234,7 @@ export class FirestoreService {
       const allProgress = await this.getProgress();
       return allProgress.filter(p => p.orgId === orgId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     } catch (error) {
-      console.warn('Firebase error in getProgressByOrganization, falling back to mock:', error);
-      return MockFirestoreService.getProgressByOrganization(orgId);
+      throw error;
     }
   }
 
@@ -250,27 +242,17 @@ export class FirestoreService {
     if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getProgressByTask(taskId);
     }
-    try {
-      const all = await this.getProgress();
-      return all.filter(p => p.taskId === taskId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    } catch (error) {
-      console.warn('Firebase error in getProgressByTask, falling back to mock:', error);
-      return MockFirestoreService.getProgressByTask(taskId);
-    }
+    const all = await this.getProgress();
+    return all.filter(p => p.taskId === taskId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
   static async getProgressByTaskAndOrg(taskId: string, orgId: string): Promise<Progress | null> {
     if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getProgressByTaskAndOrg(taskId, orgId);
     }
-    try {
-      const all = await this.getProgress();
-      const found = all.find(p => p.taskId === taskId && p.orgId === orgId);
-      return found || null;
-    } catch (error) {
-      console.warn('Firebase error in getProgressByTaskAndOrg, falling back to mock:', error);
-      return MockFirestoreService.getProgressByTaskAndOrg(taskId, orgId);
-    }
+    const all = await this.getProgress();
+    const found = all.find(p => p.taskId === taskId && p.orgId === orgId);
+    return found || null;
   }
 
   static async createOrUpdateProgress(
@@ -339,8 +321,8 @@ export class FirestoreService {
       // 進捗キャッシュを無効化（再取得で最新化）
       invalidate(['progress']);
     } catch (error) {
-      console.error('Firebase error in createOrUpdateProgress:', error);
-      // 書込みは安全のためフォールバックしない
+    console.error('Firebase error in createOrUpdateProgress:', error);
+      // Firebase構成時はフォールバックせず伝播
       throw error;
     }
   }
@@ -365,7 +347,6 @@ export class FirestoreService {
       await batch.commit();
       invalidate(['tasks']);
     } catch (error) {
-      console.warn('Firebase error in updateTaskOrder:', error);
       throw error;
     }
   }
