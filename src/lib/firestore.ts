@@ -7,7 +7,6 @@ import {
   updateDoc,
   query,
   where,
-  orderBy,
   writeBatch,
   deleteField,
 } from 'firebase/firestore';
@@ -28,7 +27,7 @@ const isFirebaseConfigured = () => {
 
 // シンプルなクライアントサイドキャッシュ（TTL）で読取回数を削減
 const CACHE_TTL_MS = 60 * 1000; // 60秒
-let cache = {
+const cache = {
   orgs: { ts: 0, data: [] as Organization[] },
   tasks: { ts: 0, data: [] as Task[] },
   progress: { ts: 0, data: [] as Progress[] },
