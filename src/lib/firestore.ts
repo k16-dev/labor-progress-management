@@ -264,18 +264,6 @@ export class FirestoreService {
       return MockFirestoreService.getProgressByTaskAndOrg(taskId, orgId);
     }
     try {
-      // まずは直接クエリで正確に取得（キャッシュ非依存）
-      const q = query(
-        collection(db, 'progress'),
-        where('taskId', '==', taskId),
-        where('orgId', '==', orgId)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const d = snap.docs[0];
-        return { id: d.id, ...d.data() } as Progress;
-      }
-      // フォールバックで全件から検索
       const all = await this.getProgress();
       const found = all.find(p => p.taskId === taskId && p.orgId === orgId);
       return found || null;
@@ -299,7 +287,6 @@ export class FirestoreService {
     }
 
     try {
-      // 直近の状態をサーバから直接取得
       const existing = await this.getProgressByTaskAndOrg(taskId, orgId);
       const nowIso = new Date().toISOString();
       const today = nowIso.split('T')[0];
