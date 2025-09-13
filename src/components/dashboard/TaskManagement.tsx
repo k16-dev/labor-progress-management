@@ -46,15 +46,11 @@ export default function TaskManagement() {
     if (!user?.orgId) return;
 
     try {
-      console.debug('Progress update requested', { taskId, orgId: user.orgId, status, memoIncluded: typeof memo !== 'undefined' });
       await FirestoreService.createOrUpdateProgress(taskId, user.orgId, status, memo);
       await loadData(); // データを再読み込み
     } catch (error) {
-      const e = error as any;
-      console.error('Failed to update progress:', e);
-      const code = e?.code || e?.name || 'unknown-error';
-      const message = e?.message || String(e);
-      alert(`進捗の更新に失敗しました\ncode: ${code}\nmessage: ${message}`);
+      console.error('Failed to update progress:', error);
+      alert('進捗の更新に失敗しました');
     }
   };
 
