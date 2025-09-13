@@ -308,16 +308,16 @@ export class FirestoreService {
       return MockFirestoreService.getProgressByTaskAndOrg(taskId, orgId);
     }
     try {
-      // まずは直接クエリで正確に取得（キャッシュ非依存）
+      // 複合インデックス不要の単一条件で取得 → メモリでtaskId一致に絞り込む
       const q = query(
         collection(db, 'progress'),
-        where('taskId', '==', taskId),
         where('orgId', '==', orgId)
       );
       const snap = await getDocs(q);
       if (!snap.empty) {
-        const d = snap.docs[0];
-        return { id: d.id, ...d.data() } as Progress;
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Progress[];
+        const found = list.find(p => p.taskId === taskId);
+        if (found) return found;
       }
       // フォールバックで全件から検索
       const all = await this.getProgress();
