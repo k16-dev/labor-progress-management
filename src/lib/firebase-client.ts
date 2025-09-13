@@ -6,6 +6,7 @@ import {
   getFirestore,
   Firestore,
 } from 'firebase/firestore';
+import type { FirestoreSettings } from 'firebase/firestore';
 
 // 環境変数からFirebase設定を読み込み
 const loadFirebaseConfig = () => {
@@ -53,10 +54,10 @@ export const initializeFirebase = (): { app: FirebaseApp | null; db: Firestore |
 
     // Firestore初期化（長期ポーリングを強制し、プロキシ/ネットワーク環境での切断に強くする）
     try {
-      db = initializeFirestore(app, {
+      const settings: FirestoreSettings = {
         experimentalForceLongPolling: true,
-        useFetchStreams: false,
-      } as any);
+      };
+      db = initializeFirestore(app, settings);
     } catch {
       // フォールバック（万一initializeFirestoreが失敗した場合）
       db = getFirestore(app);
