@@ -3,6 +3,7 @@ import {
   initializeFirestore,
   enableIndexedDbPersistence,
   enableMultiTabIndexedDbPersistence,
+  getFirestore,
   Firestore,
 } from 'firebase/firestore';
 
@@ -58,21 +59,16 @@ export const initializeFirebase = (): { app: FirebaseApp | null; db: Firestore |
       } as any);
     } catch {
       // フォールバック（万一initializeFirestoreが失敗した場合）
-      db = (await import('firebase/firestore')).getFirestore(app);
+      db = getFirestore(app);
     }
 
-    // オフライン永続化（可能な環境で有効化）
+    // オフライン永続化（可能な環境で有効化） - 非同期だが初期化をブロックしない
     if (db) {
-      try {
-        await enableIndexedDbPersistence(db);
-      } catch (err: unknown) {
-        // 既に別タブで有効、または環境非対応の場合はマルチタブ永続化を試行
-        try {
-          await enableMultiTabIndexedDbPersistence(db);
-        } catch {
-          // どちらも不可の場合はスキップ（機能限定で継続）
-        }
-      }
+      enableIndexedDbPersistence(db).catch(() => {
+        enableMultiTabIndexedDbPersistence(db!).catch(() => {
+          // 永続化が使えない環境ではスキップ
+        });
+      });
     }
 
     return { app, db };
