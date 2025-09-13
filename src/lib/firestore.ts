@@ -1,15 +1,15 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  query, 
-  where, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  query,
+  where,
   orderBy,
   writeBatch,
-  deleteField
+  deleteField,
 } from 'firebase/firestore';
 import { db, initializeFirebase } from './firebase-client';
 import { MockFirestoreService } from './mock-data';
@@ -26,12 +26,30 @@ const isFirebaseConfigured = () => {
   return false;
 };
 
+// シンプルなクライアントサイドキャッシュ（TTL）で読取回数を削減
+const CACHE_TTL_MS = 60 * 1000; // 60秒
+let cache = {
+  orgs: { ts: 0, data: [] as Organization[] },
+  tasks: { ts: 0, data: [] as Task[] },
+  progress: { ts: 0, data: [] as Progress[] },
+};
+
+const nowTs = () => Date.now();
+const fresh = (ts: number) => nowTs() - ts < CACHE_TTL_MS;
+const invalidate = (keys: Array<keyof typeof cache>) => {
+  for (const k of keys) cache[k].ts = 0;
+};
+
 export class FirestoreService {
   static async getOrganizations(): Promise<Organization[]> {
     if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getOrganizations();
     }
-    
+    // キャッシュ利用
+    if (fresh(cache.orgs.ts) && cache.orgs.data.length > 0) {
+      return [...cache.orgs.data].sort((a, b) => a.displayOrder - b.displayOrder);
+    }
+
     try {
       // シンプルなクエリに変更（インデックス不要）
       const querySnapshot = await getDocs(collection(db, 'organizations'));
@@ -39,12 +57,12 @@ export class FirestoreService {
         id: doc.id,
         ...doc.data()
       })) as Organization[];
-      
+      cache.orgs = { ts: nowTs(), data: allOrgs };
       // JavaScript側でソート
       return allOrgs.sort((a, b) => a.displayOrder - b.displayOrder);
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getOrganizations();
+      // Firebaseが構成されている場合はフォールバックせずエラーを伝播
+      throw error;
     }
   }
 
@@ -62,8 +80,7 @@ export class FirestoreService {
       }
       return null;
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getOrganizationById(id);
+      throw error;
     }
   }
 
@@ -73,20 +90,10 @@ export class FirestoreService {
     }
     
     try {
-      // シンプルなクエリに変更（インデックス不要）
-      const querySnapshot = await getDocs(collection(db, 'organizations'));
-      const allOrgs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Organization[];
-      
-      // JavaScript側でフィルタリングとソート
-      return allOrgs
-        .filter(o => o.role === role)
-        .sort((a, b) => a.displayOrder - b.displayOrder);
+      const allOrgs = await this.getOrganizations();
+      return allOrgs.filter(o => o.role === role).sort((a, b) => a.displayOrder - b.displayOrder);
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getOrganizationsByRole(role);
+      throw error;
     }
   }
 
@@ -94,7 +101,10 @@ export class FirestoreService {
     if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getTasks();
     }
-    
+    if (fresh(cache.tasks.ts) && cache.tasks.data.length > 0) {
+      return [...cache.tasks.data].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    }
+
     try {
       // シンプルなクエリに変更（インデックス不要）
       const querySnapshot = await getDocs(collection(db, 'tasks'));
@@ -102,12 +112,11 @@ export class FirestoreService {
         id: doc.id,
         ...doc.data()
       })) as Task[];
-      
+      cache.tasks = { ts: nowTs(), data: allTasks };
       // JavaScript側でソート
       return allTasks.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getTasks();
+      throw error;
     }
   }
 
@@ -117,20 +126,12 @@ export class FirestoreService {
     }
     
     try {
-      // シンプルなクエリに変更（インデックス不要）
-      const querySnapshot = await getDocs(collection(db, 'tasks'));
-      const allTasks = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Task[];
-      
-      // JavaScript側でフィルタリング（表示順でソート）
-      return allTasks.filter(t => 
-        t.category === category && t.active && t.kind === 'common'
-      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      const allTasks = await this.getTasks();
+      return allTasks
+        .filter(t => t.category === category && t.active && t.kind === 'common')
+        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getTasksByCategory(category);
+      throw error;
     }
   }
 
@@ -140,20 +141,12 @@ export class FirestoreService {
     }
     
     try {
-      // シンプルなクエリに変更（インデックス不要）
-      const querySnapshot = await getDocs(collection(db, 'tasks'));
-      const allTasks = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Task[];
-      
-      // JavaScript側でフィルタリング（ローカルタスクは表示順でソート）
-      return allTasks.filter(t => 
-        t.createdByOrgId === orgId && t.active && t.kind === 'local'
-      ).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      const allTasks = await this.getTasks();
+      return allTasks
+        .filter(t => t.createdByOrgId === orgId && t.active && t.kind === 'local')
+        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getTasksByOrganization(orgId);
+      throw error;
     }
   }
 
@@ -164,10 +157,11 @@ export class FirestoreService {
     
     try {
       const docRef = await addDoc(collection(db, 'tasks'), task);
+      invalidate(['tasks']);
       return docRef.id;
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.createTask(task);
+      // Firebase構成時はモックにフォールバックせず、エラーを伝播
+      throw error;
     }
   }
 
@@ -182,36 +176,41 @@ export class FirestoreService {
         ...updates, 
         updatedAt: new Date().toISOString().split('T')[0] 
       });
+      invalidate(['tasks']);
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.updateTask(id, updates);
+      throw error;
     }
   }
 
   static async deleteTask(id: string): Promise<void> {
-    if (!db) throw new Error('Database not initialized');
+    if (!isFirebaseConfigured() || !db) {
+      return MockFirestoreService.deleteTask(id);
+    }
+
     const batch = writeBatch(db);
-    
-    // Delete task
+
     const taskRef = doc(db, 'tasks', id);
     batch.delete(taskRef);
-    
-    // Delete related progress records
+
     const progressQuery = query(collection(db, 'progress'), where('taskId', '==', id));
     const progressSnapshot = await getDocs(progressQuery);
-    
+
     progressSnapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
-    
+
     await batch.commit();
+    invalidate(['tasks', 'progress']);
   }
 
   static async getProgress(): Promise<Progress[]> {
     if (!isFirebaseConfigured() || !db) {
       return MockFirestoreService.getProgress();
     }
-    
+    if (fresh(cache.progress.ts) && cache.progress.data.length > 0) {
+      return [...cache.progress.data].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
+
     try {
       // シンプルなクエリに変更（インデックス不要）
       const querySnapshot = await getDocs(collection(db, 'progress'));
@@ -219,12 +218,11 @@ export class FirestoreService {
         id: doc.id,
         ...doc.data()
       })) as Progress[];
-      
+      cache.progress = { ts: nowTs(), data: allProgress };
       // JavaScript側でソート
       return allProgress.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getProgress();
+      throw error;
     }
   }
 
@@ -234,53 +232,28 @@ export class FirestoreService {
     }
     
     try {
-      // シンプルなクエリに変更（インデックス不要）
-      const querySnapshot = await getDocs(collection(db, 'progress'));
-      const allProgress = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Progress[];
-      
-      // JavaScript側でフィルタリングとソート
-      return allProgress
-        .filter(p => p.orgId === orgId)
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      const allProgress = await this.getProgress();
+      return allProgress.filter(p => p.orgId === orgId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.getProgressByOrganization(orgId);
+      throw error;
     }
   }
 
   static async getProgressByTask(taskId: string): Promise<Progress[]> {
-    if (!db) return [];
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'progress'), 
-        where('taskId', '==', taskId),
-        orderBy('updatedAt', 'desc')
-      )
-    );
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Progress[];
+    if (!isFirebaseConfigured() || !db) {
+      return MockFirestoreService.getProgressByTask(taskId);
+    }
+    const all = await this.getProgress();
+    return all.filter(p => p.taskId === taskId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
   static async getProgressByTaskAndOrg(taskId: string, orgId: string): Promise<Progress | null> {
-    if (!db) return null;
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'progress'), 
-        where('taskId', '==', taskId),
-        where('orgId', '==', orgId)
-      )
-    );
-    
-    if (!querySnapshot.empty) {
-      const doc = querySnapshot.docs[0];
-      return { id: doc.id, ...doc.data() } as Progress;
+    if (!isFirebaseConfigured() || !db) {
+      return MockFirestoreService.getProgressByTaskAndOrg(taskId, orgId);
     }
-    return null;
+    const all = await this.getProgress();
+    const found = all.find(p => p.taskId === taskId && p.orgId === orgId);
+    return found || null;
   }
 
   static async createOrUpdateProgress(
@@ -288,72 +261,70 @@ export class FirestoreService {
     orgId: string, 
     status: TaskStatus, 
     memo?: string
-  ): Promise<void> {    
+  ): Promise<void> {
     // 動的にFirebaseを取得
     const { db: currentDb } = initializeFirebase();
-    
+
     if (!isFirebaseConfigured() || !currentDb) {
       return MockFirestoreService.createOrUpdateProgress(taskId, orgId, status, memo);
     }
-    
+
     try {
       const existing = await this.getProgressByTaskAndOrg(taskId, orgId);
-      const now = new Date().toISOString();
-      const today = now.split('T')[0];
-      
+      const nowIso = new Date().toISOString();
+      const today = nowIso.split('T')[0];
+
+      const sanitizedMemo = typeof memo === 'string' ? memo.trim() : undefined;
+      const memoChanged = !!existing
+        ? sanitizedMemo !== undefined && sanitizedMemo !== (existing.memo || '').trim()
+        : sanitizedMemo !== undefined && sanitizedMemo.length > 0;
+
       if (existing) {
-        const updates: Partial<Progress> = {
+        const updateData: Record<string, unknown> = {
           status,
-          updatedAt: today
+          updatedAt: today,
         };
-        
-        if (memo !== undefined) {
-          updates.memo = memo;
-          updates.memoHistory = [
+
+        if (memoChanged) {
+          updateData.memo = sanitizedMemo;
+          const lastMemo = (existing.memoHistory || []).at(-1)?.memo?.trim();
+          const newHistory = [
             ...(existing.memoHistory || []),
-            {
-              memo,
-              orgId,
-              timestamp: now
-            }
           ];
+          if (sanitizedMemo && sanitizedMemo !== lastMemo) {
+            newHistory.push({ memo: sanitizedMemo, orgId, timestamp: nowIso });
+          }
+          updateData.memoHistory = newHistory;
         }
-        
+
         if (status === '完了' && !existing.completedAt) {
-          updates.completedAt = today;
+          updateData.completedAt = today;
         } else if (status !== '完了' && existing.completedAt) {
-          // Firestoreでフィールドを削除するための特別処理
-          const updateData = { ...updates };
-          Object.assign(updateData, { completedAt: deleteField() });
-          const docRef = doc(currentDb, 'progress', existing.id);
-          await updateDoc(docRef, updateData);
-          return;
+          updateData.completedAt = deleteField();
         }
-        
+
         const docRef = doc(currentDb, 'progress', existing.id);
-        await updateDoc(docRef, updates);
+        await updateDoc(docRef, updateData);
       } else {
         const newProgress: Omit<Progress, 'id'> = {
           taskId,
           orgId,
           status,
-          memo: memo || '',
-          memoHistory: memo ? [{
-            memo,
-            orgId,
-            timestamp: now
-          }] : [],
+          memo: sanitizedMemo || '',
+          memoHistory: sanitizedMemo && sanitizedMemo.length > 0 ? [{ memo: sanitizedMemo, orgId, timestamp: nowIso }] : [],
           completedAt: status === '完了' ? today : undefined,
-          updatedAt: today
+          updatedAt: today,
         };
-        
+
         await addDoc(collection(currentDb, 'progress'), newProgress);
       }
+
+      // 進捗キャッシュを無効化（再取得で最新化）
+      invalidate(['progress']);
     } catch (error) {
-      console.error('Firebase error in createOrUpdateProgress:', error);
-      
-      // Fallback to mock data
-      return MockFirestoreService.createOrUpdateProgress(taskId, orgId, status, memo);
+    console.error('Firebase error in createOrUpdateProgress:', error);
+      // Firebase構成時はフォールバックせず伝播
+      throw error;
     }
   }
 
@@ -375,9 +346,9 @@ export class FirestoreService {
       });
       
       await batch.commit();
+      invalidate(['tasks']);
     } catch (error) {
-      console.warn('Firebase error, using mock data:', error);
-      return MockFirestoreService.updateTaskOrder(taskOrderUpdates);
+      throw error;
     }
   }
 }

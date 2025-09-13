@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 内部利用（サインイン無し）想定の妥協案ルール
+    // 注意: クライアントの真正性・所属は検証できません。App Check 等の併用を推奨します。
+
+    // organizations: 読み取り専用（管理はAdmin SDK側で）
+    match /organizations/{orgId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // tasks: 読み取りのみ（共通/ローカル含めクライアントからの編集禁止）
+    match /tasks/{taskId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // progress: 読み取り可、作成/更新は整合性チェックのみ許可
+    match /progress/{progressId} {
+      allow read: if true;
+
+      function isValidOrg(orgId) {
+        return exists(/databases/$(database)/documents/organizations/$(orgId));
+      }
+
+      function taskDoc(taskId) {
+        return get(/databases/$(database)/documents/tasks/$(taskId));
+      }
+
+      // 作成: 組織・タスクの存在確認、ローカルタスクは作成組織のみ
+      allow create: if
+        request.resource.data.keys().hasOnly(['taskId','orgId','status','memo','memoHistory','completedAt','updatedAt']) &&
+        isValidOrg(request.resource.data.orgId) &&
+        exists(/databases/$(database)/documents/tasks/$(request.resource.data.taskId)) &&
+        (
+          taskDoc(request.resource.data.taskId).data.kind == 'common' ||
+          (
+            taskDoc(request.resource.data.taskId).data.kind == 'local' &&
+            taskDoc(request.resource.data.taskId).data.createdByOrgId == request.resource.data.orgId
+          )
+        );
+
+      // 更新: taskId/orgIdは不変、許可フィールドのみ変更可能
+      allow update: if
+        request.resource.data.taskId == resource.data.taskId &&
+        request.resource.data.orgId == resource.data.orgId &&
+        request.resource.data.keys().hasOnly(['taskId','orgId','status','memo','memoHistory','completedAt','updatedAt']);
+
+      // 削除禁止（必要ならAdmin SDKで）
+      allow delete: if false;
+    }
+  }
+}
