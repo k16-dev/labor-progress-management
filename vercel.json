@@ -1,0 +1,4 @@
+{
+  "ignoreCommand": "echo 'Ignoring all Vercel deployments for this repo' && exit 0"
+}
+
