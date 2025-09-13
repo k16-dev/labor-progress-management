@@ -5,6 +5,9 @@ import {
   collection,
   getDocs,
   addDoc,
+  doc,
+  setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 
 const cfg = {
@@ -100,3 +103,4 @@ main().catch(err => {
   console.error('verify failed', err);
   process.exit(1);
 });
+
