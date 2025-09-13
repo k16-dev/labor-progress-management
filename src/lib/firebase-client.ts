@@ -1,10 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import {
-  initializeFirestore,
-  enableIndexedDbPersistence,
-  enableMultiTabIndexedDbPersistence,
-  Firestore,
-} from 'firebase/firestore';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 // 環境変数からFirebase設定を読み込み
 const loadFirebaseConfig = () => {
@@ -50,30 +45,8 @@ export const initializeFirebase = (): { app: FirebaseApp | null; db: Firestore |
       app = getApps()[0];
     }
 
-    // Firestore初期化（長期ポーリングを強制し、プロキシ/ネットワーク環境での切断に強くする）
-    try {
-      db = initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-        useFetchStreams: false,
-      } as any);
-    } catch {
-      // フォールバック（万一initializeFirestoreが失敗した場合）
-      db = (await import('firebase/firestore')).getFirestore(app);
-    }
-
-    // オフライン永続化（可能な環境で有効化）
-    if (db) {
-      try {
-        await enableIndexedDbPersistence(db);
-      } catch (err: unknown) {
-        // 既に別タブで有効、または環境非対応の場合はマルチタブ永続化を試行
-        try {
-          await enableMultiTabIndexedDbPersistence(db);
-        } catch {
-          // どちらも不可の場合はスキップ（機能限定で継続）
-        }
-      }
-    }
+    // Firestore初期化
+    db = getFirestore(app);
 
     return { app, db };
 
