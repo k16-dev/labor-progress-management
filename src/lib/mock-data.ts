@@ -245,21 +245,19 @@ export class MockFirestoreService {
           
           this.progress[existingIndex] = { ...existing, ...updates };
         } else {
-          const newProgress: Progress = {
+          // undefined をフィールドに含めない
+          const base = {
             id: `progress_${Date.now()}`,
             taskId,
             orgId,
             status,
             memo: memo || '',
-            memoHistory: memo ? [{
-              memo,
-              orgId,
-              timestamp: now
-            }] : [],
-            completedAt: status === '完了' ? today : undefined,
+            memoHistory: memo ? [{ memo, orgId, timestamp: now }] : [],
             updatedAt: today
-          };
-          
+          } as Progress;
+          const newProgress = status === '完了'
+            ? { ...base, completedAt: today }
+            : base;
           this.progress.push(newProgress);
         }
         

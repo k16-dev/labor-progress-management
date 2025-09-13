@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #1f2937;
+  /* Fallback font variables when next/font is unavailable */
+  --font-geist-sans: ui-sans-serif;
+  --font-geist-mono: ui-monospace;
 }
 
 @theme inline {

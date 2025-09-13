@@ -189,7 +189,10 @@ export class FirestoreService {
   }
 
   static async deleteTask(id: string): Promise<void> {
-    if (!db) throw new Error('Database not initialized');
+    if (!isFirebaseConfigured() || !db) {
+      // フォールバック（Firebase未初期化時）
+      return MockFirestoreService.deleteTask(id);
+    }
     const batch = writeBatch(db);
     
     // Delete task
@@ -252,35 +255,48 @@ export class FirestoreService {
   }
 
   static async getProgressByTask(taskId: string): Promise<Progress[]> {
-    if (!db) return [];
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'progress'), 
-        where('taskId', '==', taskId),
-        orderBy('updatedAt', 'desc')
-      )
-    );
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Progress[];
+    if (!isFirebaseConfigured() || !db) {
+      return MockFirestoreService.getProgressByTask(taskId);
+    }
+    try {
+      const querySnapshot = await getDocs(
+        query(
+          collection(db, 'progress'),
+          where('taskId', '==', taskId),
+          orderBy('updatedAt', 'desc')
+        )
+      );
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Progress[];
+    } catch (error) {
+      console.warn('Firebase error, using mock data:', error);
+      return MockFirestoreService.getProgressByTask(taskId);
+    }
   }
 
   static async getProgressByTaskAndOrg(taskId: string, orgId: string): Promise<Progress | null> {
-    if (!db) return null;
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'progress'), 
-        where('taskId', '==', taskId),
-        where('orgId', '==', orgId)
-      )
-    );
-    
-    if (!querySnapshot.empty) {
-      const doc = querySnapshot.docs[0];
-      return { id: doc.id, ...doc.data() } as Progress;
+    if (!isFirebaseConfigured() || !db) {
+      return MockFirestoreService.getProgressByTaskAndOrg(taskId, orgId);
     }
-    return null;
+    try {
+      const querySnapshot = await getDocs(
+        query(
+          collection(db, 'progress'),
+          where('taskId', '==', taskId),
+          where('orgId', '==', orgId)
+        )
+      );
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        return { id: docSnap.id, ...docSnap.data() } as Progress;
+      }
+      return null;
+    } catch (error) {
+      console.warn('Firebase error, using mock data:', error);
+      return MockFirestoreService.getProgressByTaskAndOrg(taskId, orgId);
+    }
   }
 
   static async createOrUpdateProgress(
@@ -333,20 +349,19 @@ export class FirestoreService {
         const docRef = doc(currentDb, 'progress', existing.id);
         await updateDoc(docRef, updates);
       } else {
-        const newProgress: Omit<Progress, 'id'> = {
+        // Firestore に undefined を送らないよう、completedAt は条件付きで付与
+        const base: Omit<Progress, 'id'> = {
           taskId,
           orgId,
           status,
           memo: memo || '',
-          memoHistory: memo ? [{
-            memo,
-            orgId,
-            timestamp: now
-          }] : [],
-          completedAt: status === '完了' ? today : undefined,
+          memoHistory: memo ? [{ memo, orgId, timestamp: now }] : [],
           updatedAt: today
         };
-        
+        const newProgress = status === '完了'
+          ? { ...base, completedAt: today }
+          : base;
+
         await addDoc(collection(currentDb, 'progress'), newProgress);
       }
     } catch (error) {
